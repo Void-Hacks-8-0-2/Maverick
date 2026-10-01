@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from backend.db.connection import get_db
 from backend.services.graph_service import get_account_graph, get_account_trace
+from backend.features import AccountFeatures, get_account_features
 
 router = APIRouter()
 
@@ -135,41 +136,48 @@ def search_accounts(
     limit: int = Query(20, ge=1, le=100)
 ):
     con = get_db()
-    like_pattern = f"%{q.strip().upper()}%" if q.strip() else "%"
+    query_str = q.strip().upper()
 
-    # Find matching unique accounts
-    query = """
-        WITH matched_accounts AS (
-            SELECT DISTINCT acc FROM (
-                SELECT Sender_Account AS acc FROM transactions WHERE Sender_Account ILIKE ?
-                UNION
-                SELECT Receiver_Account AS acc FROM transactions WHERE Receiver_Account ILIKE ?
-            ) LIMIT ?
-        ),
-        stats AS (
+    # Query pre-materialized accounts_dimension (sub-10ms response)
+    if query_str:
+        query = """
             SELECT 
-                m.acc,
-                (SELECT COUNT(*) FROM transactions t WHERE t.Receiver_Account = m.acc) AS in_count,
-                (SELECT COUNT(*) FROM transactions t WHERE t.Sender_Account = m.acc) AS out_count,
-                (SELECT COALESCE(SUM(Amount), 0.0) FROM transactions t WHERE t.Receiver_Account = m.acc) AS inflow,
-                (SELECT COALESCE(SUM(Amount), 0.0) FROM transactions t WHERE t.Sender_Account = m.acc) AS outflow
-            FROM matched_accounts m
-        )
-        SELECT acc, in_count, out_count, inflow, outflow
-        FROM stats
-        ORDER BY (in_count + out_count) DESC
-    """
-    rows = con.execute(query, [like_pattern, like_pattern, limit]).fetchall()
+                account_number,
+                incoming_txn_count,
+                outgoing_txn_count,
+                total_inflow,
+                total_outflow,
+                net_flow_delta
+            FROM accounts_dimension
+            WHERE account_number ILIKE ?
+            ORDER BY transaction_count DESC
+            LIMIT ?
+        """
+        rows = con.execute(query, [f"%{query_str}%", limit]).fetchall()
+    else:
+        query = """
+            SELECT 
+                account_number,
+                incoming_txn_count,
+                outgoing_txn_count,
+                total_inflow,
+                total_outflow,
+                net_flow_delta
+            FROM accounts_dimension
+            ORDER BY transaction_count DESC
+            LIMIT ?
+        """
+        rows = con.execute(query, [limit]).fetchall()
 
     results = []
-    for acc, in_cnt, out_cnt, inflow, outflow in rows:
+    for acc, in_cnt, out_cnt, inflow, outflow, net_flow in rows:
         results.append({
             "account": acc,
             "inbound_transaction_count": in_cnt,
             "outbound_transaction_count": out_cnt,
             "observed_inflow": round(inflow, 2),
             "observed_outflow": round(outflow, 2),
-            "dataset_observed_net_movement": round(inflow - outflow, 2)
+            "dataset_observed_net_movement": round(net_flow, 2)
         })
 
     return results
@@ -180,26 +188,24 @@ def get_account_detail(account_id: str):
     con = get_db()
     acc = account_id.strip()
 
-    # Check existence
-    exists = con.execute(
-        "SELECT 1 FROM transactions WHERE Sender_Account = ? OR Receiver_Account = ? LIMIT 1",
-        [acc, acc]
-    ).fetchone()
+    # Check existence & retrieve pre-materialized metrics from accounts_dimension
+    acc_row = con.execute("""
+        SELECT 
+            incoming_txn_count, 
+            outgoing_txn_count, 
+            unique_senders, 
+            unique_receivers, 
+            total_inflow, 
+            total_outflow, 
+            net_flow_delta
+        FROM accounts_dimension 
+        WHERE account_number = ?
+    """, [acc]).fetchone()
 
-    if not exists:
+    if not acc_row:
         raise HTTPException(status_code=404, detail=f"Account '{account_id}' not found in dataset")
 
-    # Inbound metrics
-    in_stats = con.execute("""
-        SELECT COUNT(*), COUNT(DISTINCT Sender_Account), COALESCE(SUM(Amount), 0.0)
-        FROM transactions WHERE Receiver_Account = ?
-    """, [acc]).fetchone()
-
-    # Outbound metrics
-    out_stats = con.execute("""
-        SELECT COUNT(*), COUNT(DISTINCT Receiver_Account), COALESCE(SUM(Amount), 0.0)
-        FROM transactions WHERE Sender_Account = ?
-    """, [acc]).fetchone()
+    in_cnt, out_cnt, u_senders, u_receivers, inflow, outflow, net_flow = acc_row
 
     # Payment modes
     pm_rows = con.execute("""
@@ -229,22 +235,32 @@ def get_account_detail(account_id: str):
     """, [acc, acc]).fetchall()
     ips = [r[0] for r in ip_rows]
 
-    inflow = round(in_stats[2], 2)
-    outflow = round(out_stats[2], 2)
-
     return {
         "account_id": acc,
-        "inbound_transaction_count": in_stats[0],
-        "outbound_transaction_count": out_stats[0],
-        "unique_senders": in_stats[1],
-        "unique_receivers": out_stats[1],
-        "observed_inflow": inflow,
-        "observed_outflow": outflow,
-        "dataset_observed_net_movement": round(inflow - outflow, 2),
+        "inbound_transaction_count": in_cnt,
+        "outbound_transaction_count": out_cnt,
+        "unique_senders": u_senders,
+        "unique_receivers": u_receivers,
+        "observed_inflow": round(inflow, 2),
+        "observed_outflow": round(outflow, 2),
+        "dataset_observed_net_movement": round(net_flow, 2),
         "payment_mode_distribution": pm_dist,
         "associated_ifscs": ifscs,
         "associated_ips": ips
     }
+
+
+@router.get("/accounts/{account_id}/features", response_model=AccountFeatures)
+def get_account_behavioral_features(account_id: str):
+    """
+    Internal/forensic feature inspection endpoint.
+    Returns deterministic account behavioral features computed across the 2M production dataset.
+    """
+    con = get_db()
+    features = get_account_features(con, account_id)
+    if not features:
+        raise HTTPException(status_code=404, detail=f"Account '{account_id}' not found in feature store")
+    return features
 
 
 @router.get("/accounts/{account_id}/transactions", response_model=PaginatedTransactionsResponse)

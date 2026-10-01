@@ -57,6 +57,55 @@ def get_db() -> duckdb.DuckDBPyConnection:
         _con.execute("CREATE INDEX IF NOT EXISTS idx_sender_account ON transactions(Sender_Account)")
         _con.execute("CREATE INDEX IF NOT EXISTS idx_receiver_account ON transactions(Receiver_Account)")
         _con.execute("CREATE INDEX IF NOT EXISTS idx_transaction_id ON transactions(Transaction_ID)")
+        
+        # Step 2: Materialize Tier 2 analytical accounts dimension & Tier 3 feature store
+        init_analytical_tier(_con)
+        
         _dataset_path = target_path
 
     return _con
+
+
+def init_analytical_tier(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Materializes the Tier 2 analytical dimension (accounts_dimension)
+    representing the union of all senders and receivers with pre-aggregated flow metrics,
+    and initializes Tier 3 feature store schema (account_features).
+    """
+    con.execute("""
+        CREATE OR REPLACE TABLE accounts_dimension AS
+        WITH entity_tx AS (
+            SELECT Sender_Account AS acc, Receiver_Account AS cp, Sender_IFSC AS ifsc, IP_Address AS ip, Device_Type AS dev, Payment_Mode AS pm, Timestamp AS ts, Amount AS amt, 1 AS is_out, 0 AS is_in FROM transactions
+            UNION ALL
+            SELECT Receiver_Account AS acc, Sender_Account AS cp, Receiver_IFSC AS ifsc, IP_Address AS ip, Device_Type AS dev, Payment_Mode AS pm, Timestamp AS ts, Amount AS amt, 0 AS is_out, 1 AS is_in FROM transactions
+        )
+        SELECT 
+            acc AS account_number,
+            ROUND(COALESCE(SUM(CASE WHEN is_in = 1 THEN amt ELSE 0.0 END), 0.0), 2) AS total_inflow,
+            ROUND(COALESCE(SUM(CASE WHEN is_out = 1 THEN amt ELSE 0.0 END), 0.0), 2) AS total_outflow,
+            ROUND(COALESCE(SUM(CASE WHEN is_in = 1 THEN amt ELSE -amt END), 0.0), 2) AS net_flow_delta,
+            CAST(SUM(is_in) AS BIGINT) AS incoming_txn_count,
+            CAST(SUM(is_out) AS BIGINT) AS outgoing_txn_count,
+            CAST(COUNT(*) AS BIGINT) AS transaction_count,
+            CAST(COUNT(DISTINCT CASE WHEN is_in = 1 THEN cp END) AS BIGINT) AS unique_senders,
+            CAST(COUNT(DISTINCT CASE WHEN is_out = 1 THEN cp END) AS BIGINT) AS unique_receivers,
+            CAST(COUNT(DISTINCT cp) AS BIGINT) AS counterparty_count,
+            MIN(ts) AS first_seen_timestamp,
+            MAX(ts) AS last_seen_timestamp,
+            CAST(COUNT(DISTINCT CASE WHEN is_out = 1 THEN ifsc END) AS BIGINT) AS sender_ifsc_count,
+            CAST(COUNT(DISTINCT CASE WHEN is_in = 1 THEN ifsc END) AS BIGINT) AS receiver_ifsc_count,
+            CAST(COUNT(DISTINCT ip) AS BIGINT) AS unique_ip_count,
+            CAST(COUNT(DISTINCT dev) AS BIGINT) AS unique_device_count,
+            CAST(COUNT(DISTINCT pm) AS BIGINT) AS unique_payment_mode_count,
+            'DERIVED' AS provenance
+        FROM entity_tx
+        GROUP BY acc
+    """)
+    con.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_dim_acc_number ON accounts_dimension(account_number)")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_dim_tx_count ON accounts_dimension(transaction_count)")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_dim_inflow ON accounts_dimension(total_inflow)")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_dim_outflow ON accounts_dimension(total_outflow)")
+
+    from backend.features.store import init_feature_store
+    init_feature_store(con, populate=True)
+

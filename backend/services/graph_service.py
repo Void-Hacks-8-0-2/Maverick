@@ -7,6 +7,15 @@ from typing import Dict, Any, List, Set, Tuple
 import duckdb
 
 
+def make_edge_id(sender: str, receiver: str, tx_id: str, ts: Any, row_id: Any) -> str:
+    """
+    Deterministic collision-safe edge identifier.
+    Guarantees uniqueness across duplicate Transaction_IDs and identical timestamps.
+    """
+    ts_str = str(ts).replace(" ", "T") if ts is not None else "NA"
+    return f"{sender}_{receiver}_{tx_id}_{ts_str}_{row_id}"
+
+
 def get_account_graph(
     con: duckdb.DuckDBPyConnection,
     account_id: str,
@@ -16,6 +25,7 @@ def get_account_graph(
     """
     Extract 1-hop or multi-hop ego network around account_id.
     Prevents uncontrolled expansion with max_nodes cutoff.
+    Preserves all duplicate Transaction_ID records with collision-safe edge identities.
     """
     nodes_map: Dict[str, Dict[str, Any]] = {
         account_id: {"id": account_id, "type": "account", "is_root": True}
@@ -31,10 +41,9 @@ def get_account_graph(
 
         # Query transactions involving current front
         front_list = list(current_front)
-        # Use parameterized query or in clause
         placeholders = ", ".join(["?"] * len(front_list))
         query = f"""
-            SELECT Transaction_ID, Sender_Account, Receiver_Account, Amount, Payment_Mode, Narration, IP_Address
+            SELECT rowid, Transaction_ID, Sender_Account, Receiver_Account, Amount, Timestamp, Payment_Mode, Narration, IP_Address
             FROM transactions
             WHERE Sender_Account IN ({placeholders}) OR Receiver_Account IN ({placeholders})
             LIMIT ?
@@ -44,17 +53,20 @@ def get_account_graph(
 
         next_front: Set[str] = set()
 
-        for tx_id, sender, receiver, amt, pm, narr, ip in rows:
-            if tx_id not in edges_map:
-                edges_map[tx_id] = {
-                    "id": tx_id,
+        for row_id, tx_id, sender, receiver, amt, ts, pm, narr, ip in rows:
+            edge_id = make_edge_id(sender, receiver, tx_id, ts, row_id)
+            if edge_id not in edges_map:
+                edges_map[edge_id] = {
+                    "id": edge_id,
                     "source": sender,
                     "target": receiver,
                     "transaction_id": tx_id,
                     "amount": float(amt) if amt is not None else 0.0,
+                    "timestamp": str(ts).replace(" ", "T") if ts is not None else "NA",
                     "payment_mode": pm or "",
                     "narration": narr or "",
-                    "ip_address": ip or ""
+                    "ip_address": ip or "",
+                    "record_id": int(row_id)
                 }
 
             for acc in (sender, receiver):
@@ -94,6 +106,7 @@ def get_account_trace(
     """
     Deterministic structural forward-flow traversal up to max_hops (default 4).
     Cycle prevention: Does not revisit accounts within the active path.
+    Preserves all duplicate Transaction_ID records with collision-safe edge identities.
     """
     nodes_map: Dict[str, Dict[str, Any]] = {
         account_id: {"id": account_id, "type": "account", "is_root": True, "hop": 0}
@@ -117,7 +130,7 @@ def get_account_trace(
 
         placeholders = ", ".join(["?"] * len(senders_in_level))
         query = f"""
-            SELECT Transaction_ID, Sender_Account, Receiver_Account, Amount, Payment_Mode, Narration, IP_Address
+            SELECT rowid, Transaction_ID, Sender_Account, Receiver_Account, Amount, Timestamp, Payment_Mode, Narration, IP_Address
             FROM transactions
             WHERE Sender_Account IN ({placeholders})
             ORDER BY Amount DESC
@@ -126,10 +139,10 @@ def get_account_trace(
         params = senders_in_level + [max_nodes * 3]
         rows = con.execute(query, params).fetchall()
 
-        # Group outbound txs by sender
+        # Group outbound txs by sender (row[2] is Sender_Account)
         tx_by_sender: Dict[str, List[Any]] = {}
         for row in rows:
-            tx_by_sender.setdefault(row[1], []).append(row)
+            tx_by_sender.setdefault(row[2], []).append(row)
 
         for path_accs, path_edges in active_paths:
             sender = path_accs[-1]
@@ -140,7 +153,7 @@ def get_account_trace(
                     paths.append(path_accs)
                 continue
 
-            for tx_id, s_acc, r_acc, amt, pm, narr, ip in outbounds:
+            for row_id, tx_id, s_acc, r_acc, amt, ts, pm, narr, ip in outbounds:
                 # Cycle prevention: target must not already exist in this specific path
                 if r_acc in path_accs:
                     continue
@@ -157,20 +170,23 @@ def get_account_trace(
                         "hop": hop
                     }
 
-                if tx_id not in edges_map:
-                    edges_map[tx_id] = {
-                        "id": tx_id,
+                edge_id = make_edge_id(s_acc, r_acc, tx_id, ts, row_id)
+                if edge_id not in edges_map:
+                    edges_map[edge_id] = {
+                        "id": edge_id,
                         "source": s_acc,
                         "target": r_acc,
                         "transaction_id": tx_id,
                         "amount": float(amt) if amt is not None else 0.0,
+                        "timestamp": str(ts).replace(" ", "T") if ts is not None else "NA",
                         "payment_mode": pm or "",
                         "narration": narr or "",
-                        "ip_address": ip or ""
+                        "ip_address": ip or "",
+                        "record_id": int(row_id)
                     }
 
                 new_path_accs = path_accs + [r_acc]
-                new_path_edges = path_edges + [tx_id]
+                new_path_edges = path_edges + [edge_id]
 
                 if hop == max_hops:
                     paths.append(new_path_accs)
