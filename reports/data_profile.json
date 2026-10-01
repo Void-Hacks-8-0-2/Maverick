@@ -1,0 +1,17 @@
+{
+  "status": "OFFICIAL_DATASET_NOT_FOUND",
+  "message": "Official transaction dataset was not found in scanned paths.",
+  "searched_paths": [
+    "data",
+    ".",
+    "..",
+    "C:\\Users\\sdmgo\\Downloads",
+    "C:\\Users\\sdmgo\\OneDrive\\Desktop"
+  ],
+  "ground_truth_discovery": {
+    "ground_truth_found": false,
+    "status": "Ground truth unavailable in repository. No synthetic labels will be substituted for evaluation.",
+    "candidates": []
+  },
+  "timestamp_utc": "2026-10-01T17:37:45Z"
+}
