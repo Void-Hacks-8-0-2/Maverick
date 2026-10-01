@@ -39,3 +39,14 @@ python -m venv backend/.venv
 Outputs:
 - `reports/data_profile_report.md` (Human-readable forensic audit)
 - `reports/data_profile.json` (Machine-readable profile metrics)
+
+---
+
+### Production Dataset Configuration
+
+The platform operates on the full-scale 2,000,000-row transaction dataset:
+- **Required Path:** `data/VoidHacks8_MuleAccount_2M_Transactions.csv`
+- **Format:** CSV (273.5 MB, 11 standard columns, RFC 4180)
+- **SHA-256:** `2c9f81fd34f728c0b7c1e803cb49e1e231c1d9204a77badfcb737f50adf73101`
+- **Scale:** Exactly 2,000,000 rows, 24,873 unique accounts, ₹3.52B total transacted volume
+- **Git Policy:** Due to GitHub's file size limits, the bulk CSV file is excluded from Git tracking via `.gitignore` and must be placed in `data/` locally. If the dataset is absent, the backend fails with an explicit `FileNotFoundError`.

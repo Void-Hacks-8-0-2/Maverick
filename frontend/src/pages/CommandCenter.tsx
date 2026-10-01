@@ -71,7 +71,7 @@ export const CommandCenter: React.FC = () => {
             Dataset Summary & Health Metrics
           </h2>
           <span className="text-[11px] font-mono text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-2 py-0.5 rounded">
-            SOURCE: {summary?.source_type || 'PDF_DERIVED_RECOVERED_DATASET'}
+            SOURCE: {summary?.source_type || 'PRODUCTION_DATASET'}
           </span>
         </div>
 
@@ -89,7 +89,7 @@ export const CommandCenter: React.FC = () => {
             {/* Card 1: Row Count */}
             <div className="bg-[#0b0f19] border border-slate-800 p-5 rounded-xl space-y-2">
               <div className="flex items-center justify-between text-slate-400">
-                <span className="text-xs font-mono">RECOVERED ROWS</span>
+                <span className="text-xs font-mono">TOTAL TRANSACTIONS</span>
                 <Database className="w-4 h-4 text-cyan-400" />
               </div>
               <div className="text-2xl font-bold font-mono text-slate-100">
@@ -137,15 +137,15 @@ export const CommandCenter: React.FC = () => {
               <div className="space-y-1">
                 <div className="text-xs font-mono text-slate-300 flex items-center justify-between">
                   <span>Timestamp:</span>
-                  <span className="text-slate-400">Unavailable</span>
+                  <span className="text-emerald-400 font-semibold">Available</span>
                 </div>
                 <div className="text-xs font-mono text-slate-300 flex items-center justify-between">
                   <span>Device_Type:</span>
-                  <span className="text-slate-400">Unavailable</span>
+                  <span className="text-emerald-400 font-semibold">Available</span>
                 </div>
               </div>
               <div className="text-[10px] text-cyan-500/80 font-mono">
-                9 observable fields validated
+                All 11 forensic fields validated
               </div>
             </div>
           </div>
@@ -156,7 +156,7 @@ export const CommandCenter: React.FC = () => {
       {summary && (
         <div className="bg-[#0b0f19] border border-slate-800 p-4 rounded-xl space-y-3">
           <div className="text-xs font-mono text-slate-400 uppercase tracking-wider">
-            Payment Mode Distribution in Recovered Transactions
+            Payment Mode Distribution in Production Transactions
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {Object.entries(summary.payment_modes).map(([mode, count]) => {

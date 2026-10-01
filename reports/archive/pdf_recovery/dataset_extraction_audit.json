@@ -1,0 +1,89 @@
+{
+  "final_gate": "BLOCKED",
+  "status_statement": "BLOCKED \u2014 extraction cannot be trusted; Phase 1 must not proceed",
+  "source": {
+    "path": "C:\\Users\\sdmgo\\OneDrive\\Desktop\\Abhedya-Chakara\\data\\Dataset_VoidHacks_compressed.pdf",
+    "filename": "Dataset_VoidHacks_compressed.pdf",
+    "size_bytes": 24853708,
+    "size_mb": 23.7,
+    "sha256": "b116a7df4355c9776259e4c95e80400139d74ce3ed87dffc09cd35e3eaafc860",
+    "total_pages": 3186,
+    "pdf_metadata": {
+      "Author": "ASUS",
+      "CreationDate": "D:20261001205305+05'30'",
+      "Creator": "Microsoft\u00ae Excel\u00ae 2021",
+      "Producer": "iLovePDF",
+      "ModDate": "D:20261001154630Z"
+    },
+    "extraction_timestamp_utc": "2026-10-01T19:51:52Z"
+  },
+  "schema_audit": {
+    "expected_columns": [
+      "Transaction_ID",
+      "Sender_Account",
+      "Receiver_Account",
+      "Sender_IFSC",
+      "Receiver_IFSC",
+      "Amount",
+      "Timestamp",
+      "Payment_Mode",
+      "Narration",
+      "IP_Address",
+      "Device_Type"
+    ],
+    "actual_columns_identified": [
+      "Transaction_ID",
+      "Sender_Account",
+      "Receiver_Account",
+      "Sender_IFSC",
+      "Receiver_IFSC",
+      "Amount",
+      "Timestamp",
+      "Payment_Mode",
+      "Narration",
+      "IP_Address"
+    ],
+    "missing_columns": [
+      "Device_Type"
+    ],
+    "schema_match": false
+  },
+  "data_integrity_audit": {
+    "sampled_pages": 2,
+    "sampled_rows": 93,
+    "rows_with_hash_timestamp": 93,
+    "rows_with_valid_timestamp": 0,
+    "estimated_total_pdf_rows": 148149,
+    "required_reference_rows": 2000000
+  },
+  "performance": {
+    "audit_duration_seconds": 1.57,
+    "peak_process_rss_mb": 167.34
+  },
+  "blocking_issues": [
+    {
+      "code": "MISSING_COLUMN_DEVICE_TYPE",
+      "severity": "CRITICAL",
+      "description": "Column 'Device_Type' is completely absent from PDF header and all data rows. The Excel-to-PDF print clipped the 11th column off the right page margin.",
+      "evidence": "Header line text: 'Transaction_IDSender_AccountReceiver_AccountSender_IFSCReceiver_IFSCAmountTimestampPayment_ModeNarrationIP_Address'"
+    },
+    {
+      "code": "CORRUPTED_TIMESTAMPS_EXCEL_OVERFLOW",
+      "severity": "CRITICAL",
+      "description": "Timestamps are unparseable literal '########' on 93/93 (100.0%) sampled rows. Excel exported narrow date column as overflow hash characters, permanently destroying temporal money trail causality.",
+      "evidence": "Observed in all sample rows: '... ######## IMPS ...'"
+    },
+    {
+      "code": "INSUFFICIENT_DATASET_SCALE",
+      "severity": "HIGH",
+      "description": "Estimated total rows across 3,186 pages is ~148,149 rows. The official Problem Statement requires a scale of 2,000,000+ banking transaction records. The PDF contains only ~148,149 rows (~5% of required dataset).",
+      "evidence": "Total pages: 3186, Avg rows/page: 46.5"
+    }
+  ],
+  "recommended_next_actions": [
+    "Request the original raw uncorrupted dataset (.csv, .parquet, or .xlsx) from Void Hacks / Indore Police organizers.",
+    "Ensure the source export includes un-truncated column widths (preserving YYYY-MM-DD HH:MM:SS timestamps).",
+    "Ensure the source export includes the 11th column 'Device_Type'.",
+    "Ensure the source export contains the full 2,000,000+ transaction scale."
+  ]
+}

@@ -22,13 +22,13 @@ def test_dataset_summary():
     res = client.get("/api/dataset/summary")
     assert res.status_code == 200
     data = res.json()
-    assert data["row_count"] == 149741
+    assert data["row_count"] == 2000000
     assert data["unique_accounts"] > 0
     assert data["unique_transactions"] > 0
     assert data["total_amount"] > 0
-    assert data["timestamp_available"] is False
-    assert data["device_type_available"] is False
-    assert data["source_type"] == "PDF_DERIVED_RECOVERED_DATASET"
+    assert data["timestamp_available"] is True
+    assert data["device_type_available"] is True
+    assert data["source_type"] == "PRODUCTION_DATASET"
     assert set(data["payment_modes"].keys()) == {"UPI", "IMPS", "NEFT", "RTGS"}
 
 
@@ -74,8 +74,8 @@ def test_account_transactions_pagination():
     assert len(data["items"]) <= 10
     if len(data["items"]) > 0:
         item = data["items"][0]
-        assert item["Timestamp"] is None
-        assert item["Device_Type"] is None
+        assert item["Timestamp"] is not None
+        assert item["Device_Type"] is not None
         assert item["Amount"] > 0
 
 

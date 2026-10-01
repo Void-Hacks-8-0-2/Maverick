@@ -1,6 +1,6 @@
 """
 Database Connection & Data Access Layer for Operation 'ABHEDYA-CHAKRA'
-Centralized DuckDB access over Parquet dataset.
+Centralized DuckDB access over 2,000,000-row production dataset.
 """
 
 import os
@@ -23,7 +23,8 @@ def get_project_root() -> Path:
 
 
 def get_dataset_path() -> Path:
-    env_path = os.getenv("ABHEDYA_DATASET_PATH", "data/extracted/transactions_recovered.parquet")
+    # Authoritative production dataset: 2,000,000-row CSV
+    env_path = os.getenv("ABHEDYA_DATASET_PATH", "data/VoidHacks8_MuleAccount_2M_Transactions.csv")
     path = Path(env_path)
     if not path.is_absolute():
         path = (get_project_root() / path).resolve()
@@ -36,14 +37,26 @@ def get_db() -> duckdb.DuckDBPyConnection:
 
     if _con is None or _dataset_path != target_path:
         if not Path(target_path).exists():
-            raise FileNotFoundError(f"Configured dataset Parquet file not found at: {target_path}")
+            raise FileNotFoundError(
+                f"Configured production dataset file not found at: {target_path}. "
+                "Operation Abhedya-Chakra requires data/VoidHacks8_MuleAccount_2M_Transactions.csv."
+            )
 
-        # In-memory DuckDB connection with view abstraction
+        # In-memory DuckDB connection with high-performance table & index materialization
         _con = duckdb.connect(database=":memory:", read_only=False)
-        # Create standardized 'transactions' view pointing to the analytical Parquet
-        # Convert path to forward slashes for DuckDB SQL compatibility
         sql_path = target_path.replace("\\", "/")
-        _con.execute(f"CREATE OR REPLACE VIEW transactions AS SELECT * FROM read_parquet('{sql_path}')")
+        
+        if sql_path.endswith(".csv"):
+            _con.execute(f"CREATE OR REPLACE TABLE transactions AS SELECT * FROM read_csv('{sql_path}', header=true)")
+        elif sql_path.endswith(".parquet"):
+            _con.execute(f"CREATE OR REPLACE TABLE transactions AS SELECT * FROM read_parquet('{sql_path}')")
+        else:
+            raise ValueError(f"Unsupported dataset format: {sql_path}")
+
+        # Materialize b-tree indexes for real-time sub-millisecond forensics & graph queries
+        _con.execute("CREATE INDEX IF NOT EXISTS idx_sender_account ON transactions(Sender_Account)")
+        _con.execute("CREATE INDEX IF NOT EXISTS idx_receiver_account ON transactions(Receiver_Account)")
+        _con.execute("CREATE INDEX IF NOT EXISTS idx_transaction_id ON transactions(Transaction_ID)")
         _dataset_path = target_path
 
     return _con

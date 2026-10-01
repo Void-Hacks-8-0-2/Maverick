@@ -271,9 +271,9 @@ export const NetworkGraphViewer: React.FC<NetworkGraphViewerProps> = ({
                   </div>
                 )}
                 <div>
-                  <span className="text-slate-500 text-[10px] block">TIMESTAMP / DEVICE</span>
-                  <span className="text-slate-500 italic text-[11px]">
-                    Unavailable in source PDF dataset
+                  <span className="text-slate-500 text-[10px] block">PAYMENT MODE</span>
+                  <span className="text-slate-300 font-semibold text-[11px]">
+                    {selectedEdge.payment_mode}
                   </span>
                 </div>
               </div>

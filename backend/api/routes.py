@@ -27,9 +27,9 @@ class DatasetSummaryResponse(BaseModel):
     unique_transactions: int
     payment_modes: Dict[str, int]
     total_amount: float
-    timestamp_available: bool = False
-    device_type_available: bool = False
-    source_type: str = "PDF_DERIVED_RECOVERED_DATASET"
+    timestamp_available: bool = True
+    device_type_available: bool = True
+    source_type: str = "PRODUCTION_DATASET"
 
 
 class AccountSearchItem(BaseModel):
@@ -123,9 +123,9 @@ def get_dataset_summary():
         "unique_transactions": stats[1],
         "payment_modes": pm_dist,
         "total_amount": round(stats[2], 2),
-        "timestamp_available": False,
-        "device_type_available": False,
-        "source_type": "PDF_DERIVED_RECOVERED_DATASET"
+        "timestamp_available": True,
+        "device_type_available": True,
+        "source_type": "PRODUCTION_DATASET"
     }
 
 
@@ -280,9 +280,11 @@ def get_account_transactions(
             Sender_IFSC,
             Receiver_IFSC,
             Amount,
+            Timestamp,
             Payment_Mode,
             Narration,
-            IP_Address
+            IP_Address,
+            Device_Type
         FROM transactions
         WHERE {where_clause}
         ORDER BY Amount DESC
@@ -298,11 +300,11 @@ def get_account_transactions(
             "Sender_IFSC": r[3],
             "Receiver_IFSC": r[4],
             "Amount": float(r[5]) if r[5] is not None else 0.0,
-            "Timestamp": None,  # Strictly None (Unavailable in source)
-            "Payment_Mode": r[6],
-            "Narration": r[7],
-            "IP_Address": r[8],
-            "Device_Type": None  # Strictly None (Absent from source)
+            "Timestamp": str(r[6]) if r[6] is not None else None,
+            "Payment_Mode": r[7],
+            "Narration": r[8],
+            "IP_Address": r[9],
+            "Device_Type": r[10]
         })
 
     return {

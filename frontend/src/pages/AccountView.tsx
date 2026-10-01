@@ -84,7 +84,7 @@ export const AccountView: React.FC = () => {
         </button>
         <div className="bg-rose-950/40 border border-rose-800 p-6 rounded-xl font-mono text-xs text-rose-300">
           <p className="font-bold text-sm">Account Not Found</p>
-          <p className="mt-1">{detailError || `Account ${id} was not observed in the recovered dataset.`}</p>
+          <p className="mt-1">{detailError || `Account ${id} was not observed in the production dataset.`}</p>
         </div>
       </div>
     );

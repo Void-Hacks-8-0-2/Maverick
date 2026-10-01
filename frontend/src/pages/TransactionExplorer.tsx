@@ -47,7 +47,7 @@ export const TransactionExplorer: React.FC = () => {
             Transaction Ledger Explorer
           </h1>
           <p className="text-xs text-slate-400 font-mono mt-1">
-            Displaying genuinely recoverable records from <span className="text-cyan-400">transactions_recovered.parquet</span>.
+            Displaying production transaction ledger from <span className="text-cyan-400">VoidHacks8_MuleAccount_2M_Transactions.csv</span>.
           </p>
         </div>
 
@@ -193,11 +193,17 @@ export const TransactionExplorer: React.FC = () => {
                       {tx.Narration}
                     </td>
                     <td className="py-3 px-4 text-slate-300">{tx.IP_Address}</td>
-                    <td className="py-3 px-4 text-slate-500 italic text-[11px]">
-                      Unavailable
+                    <td className="py-3 px-4 text-slate-300 text-[11px] whitespace-nowrap">
+                      {tx.Timestamp || '—'}
                     </td>
-                    <td className="py-3 px-4 text-slate-500 italic text-[11px]">
-                      Unavailable
+                    <td className="py-3 px-4 text-slate-300 text-[11px]">
+                      {tx.Device_Type ? (
+                        <span className="bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded text-[10px]">
+                          {tx.Device_Type}
+                        </span>
+                      ) : (
+                        '—'
+                      )}
                     </td>
                   </tr>
                 ))

@@ -23,10 +23,10 @@ async def lifespan(app: FastAPI):
     # Pre-warm DuckDB connection and ensure Parquet view exists
     db_path = get_dataset_path()
     print(f"[STARTUP] Initializing Abhedya-Chakra Base v0.1 backend...")
-    print(f"[STARTUP] Analytical Parquet Source: {db_path}")
+    print(f"[STARTUP] Production Dataset Source: {db_path}")
     con = get_db()
     row_count = con.execute("SELECT COUNT(*) FROM transactions").fetchone()[0]
-    print(f"[STARTUP] Verified DuckDB Parquet view loaded successfully ({row_count:,} records).")
+    print(f"[STARTUP] Verified DuckDB table loaded successfully ({row_count:,} records).")
     yield
     print("[SHUTDOWN] Closing Abhedya-Chakra backend.")
 
