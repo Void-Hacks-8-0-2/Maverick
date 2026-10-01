@@ -1,6 +1,7 @@
 """
 Configurable Forensic Detection Thresholds for Operation 'ABHEDYA-CHAKRA'
 Step 4: Deterministic Layer 1 / Layer 2 / Layer 3 Mule Role Candidate Generation.
+Step 5A: 3–15 Minute Pass-Through Velocity Detection.
 
 NOTE ON CALIBRATION:
 Initial deterministic heuristic thresholds for investigative candidate generation;
@@ -64,16 +65,53 @@ class Layer3Thresholds:
 
 
 @dataclass(frozen=True)
+class VelocityThresholds:
+    """
+    Thresholds for Step 5A — 3–15 Minute Pass-Through Velocity Detection.
+
+    Window semantics (INCLUSIVE on both boundaries):
+        QUALIFYING:     3 min 0 sec  <=  delay  <=  15 min 0 sec
+        BEFORE_WINDOW:  delay  <  3 min 0 sec
+        AFTER_WINDOW:   delay  >  15 min 0 sec
+
+    Boundary behavior (exact):
+        exactly 3:00 minutes  → INCLUDED in qualifying window
+        exactly 15:00 minutes → INCLUDED in qualifying window
+        2:59 minutes          → NOT included (BEFORE_WINDOW)
+        15:01 minutes         → NOT included (AFTER_WINDOW)
+
+    NOTE ON CALIBRATION:
+    Not ground-truth-calibrated. The 90% threshold follows the official problem statement.
+    """  # noqa: D205
+    # Time window boundaries (seconds, INCLUSIVE)
+    min_delay_seconds: int = 180    # 3 minutes exactly (inclusive lower bound)
+    max_delay_seconds: int = 900    # 15 minutes exactly (inclusive upper bound)
+
+    # Pass-through ratio threshold: qualifying_attributed_volume / total_incoming_volume >= this
+    min_pass_through_ratio: float = 0.90
+
+    # Minimum number of qualifying outgoing transactions required
+    # "across multiple outgoing transfers" requirement from the problem statement
+    min_pass_through_outgoing_tx: int = 2
+
+    # Provenance
+    velocity_version: str = "v1"
+    provenance: str = "DERIVED"
+
+
+@dataclass(frozen=True)
 class RoleClassificationThresholds:
     """
-    Unified configuration bundle for all role classification layers.
+    Unified configuration bundle for all role classification layers and velocity detection.
     Allows dynamic overriding and hyperparameter sensitivity evaluation without modifying code.
     """
     layer1: Layer1Thresholds = field(default_factory=Layer1Thresholds)
     layer2: Layer2Thresholds = field(default_factory=Layer2Thresholds)
     layer3: Layer3Thresholds = field(default_factory=Layer3Thresholds)
+    velocity: VelocityThresholds = field(default_factory=VelocityThresholds)
     classification_version: str = "v1"
     provenance: str = "CANDIDATE_CLASSIFICATION"
 
 
 DEFAULT_THRESHOLDS = RoleClassificationThresholds()
+DEFAULT_VELOCITY_THRESHOLDS = VelocityThresholds()

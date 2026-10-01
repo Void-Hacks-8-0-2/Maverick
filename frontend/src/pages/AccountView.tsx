@@ -11,11 +11,15 @@ import {
   ArrowUpRight,
   Loader2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ShieldAlert,
+  Zap,
+  Clock,
+  Info
 } from 'lucide-react';
-import { getAccountDetail } from '../api/accounts';
+import { getAccountDetail, getAccountFeatures, getAccountVelocity } from '../api/accounts';
 import { getAccountTransactions } from '../api/transactions';
-import type { AccountDetail, PaginatedTransactions, TransactionItem } from '../types';
+import type { AccountDetail, PaginatedTransactions, TransactionItem, AccountFeatures, VelocityResponse } from '../types';
 
 export const AccountView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +28,10 @@ export const AccountView: React.FC = () => {
   const [detail, setDetail] = useState<AccountDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(true);
   const [detailError, setDetailError] = useState<string | null>(null);
+
+  // Forensic Features & Velocity state (Step 4 & Step 5A)
+  const [features, setFeatures] = useState<AccountFeatures | null>(null);
+  const [velocity, setVelocity] = useState<VelocityResponse | null>(null);
 
   // Transactions pagination state
   const [direction, setDirection] = useState<'all' | 'in' | 'out'>('all');
@@ -47,6 +55,15 @@ export const AccountView: React.FC = () => {
         setDetailError(err.message || 'Failed to load account details');
         setLoadingDetail(false);
       });
+
+    // Fetch forensic features and velocity in parallel
+    getAccountFeatures(id)
+      .then((feat) => setFeatures(feat))
+      .catch(() => setFeatures(null));
+
+    getAccountVelocity(id)
+      .then((vel) => setVelocity(vel))
+      .catch(() => setVelocity(null));
   }, [id]);
 
   useEffect(() => {
@@ -234,6 +251,278 @@ export const AccountView: React.FC = () => {
         </div>
       </div>
 
+      {/* Forensic Intelligence & Candidate Classification (Step 4 & Step 5A) */}
+      <div className="bg-[#0b0f19] border border-slate-800 rounded-xl p-5 space-y-5 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-800/80 pb-3">
+          <div className="flex items-center space-x-2">
+            <ShieldAlert className="w-5 h-5 text-cyan-400" />
+            <h2 className="text-sm font-mono font-bold uppercase tracking-wider text-slate-200">
+              Forensic Candidate Intelligence & Behavioral Metrics
+            </h2>
+          </div>
+          <span className="text-[10px] font-mono text-amber-400 bg-amber-950/40 border border-amber-800/40 px-2 py-0.5 rounded">
+            INVESTIGATIVE CANDIDATE INDICATORS ONLY &bull; NOT LEGAL DETERMINATION
+          </span>
+        </div>
+
+        {/* Step 4 Candidate Role Badges */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Layer 1 */}
+          <div className={`p-4 rounded-xl border font-mono transition ${
+            features?.layer1_candidate
+              ? 'bg-amber-950/20 border-amber-600/60 text-amber-300'
+              : 'bg-slate-900/30 border-slate-800/70 text-slate-400'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase">Layer 1: Collector Mule</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                features?.layer1_candidate
+                  ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+                  : 'bg-slate-800 text-slate-500'
+              }`}>
+                {features?.layer1_candidate ? 'CANDIDATE' : 'NOT QUALIFIED'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-2">
+              High-volume fan-in collection node consolidating funds from victim accounts.
+            </p>
+            {features?.layer1_candidate && features.layer1_reasons.length > 0 && (
+              <div className="mt-3 pt-2 border-t border-amber-900/40 space-y-1">
+                {features.layer1_reasons.map((r, i) => (
+                  <div key={i} className="text-[10px] text-amber-200/90 flex items-start space-x-1">
+                    <span className="text-amber-400 font-bold">&bull;</span>
+                    <span>{r.description}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Layer 2 */}
+          <div className={`p-4 rounded-xl border font-mono transition ${
+            features?.layer2_candidate
+              ? 'bg-cyan-950/20 border-cyan-600/60 text-cyan-300'
+              : 'bg-slate-900/30 border-slate-800/70 text-slate-400'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase">Layer 2: Distributor Mule</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                features?.layer2_candidate
+                  ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-300'
+                  : 'bg-slate-800 text-slate-500'
+              }`}>
+                {features?.layer2_candidate ? 'CANDIDATE' : 'NOT QUALIFIED'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-2">
+              Layering node splitting inbound amounts into multiple outward dispersals.
+            </p>
+            {features?.layer2_candidate && features.layer2_reasons.length > 0 && (
+              <div className="mt-3 pt-2 border-t border-cyan-900/40 space-y-1">
+                {features.layer2_reasons.map((r, i) => (
+                  <div key={i} className="text-[10px] text-cyan-200/90 flex items-start space-x-1">
+                    <span className="text-cyan-400 font-bold">&bull;</span>
+                    <span>{r.description}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {!features?.layer2_candidate && (
+              <div className="mt-3 pt-2 border-t border-slate-800/80 text-[10px] space-y-1 text-slate-500 font-mono">
+                <div className="flex justify-between">
+                  <span>Observed Fan-out (Receivers):</span>
+                  <span className="text-slate-300 font-bold">{features?.fan_out ?? detail.unique_receivers} <span className="text-slate-500 font-normal">/ 95 min</span></span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Outbound Tx Count:</span>
+                  <span className="text-slate-300 font-bold">{features?.outgoing_txn_count ?? detail.outbound_transaction_count} <span className="text-slate-500 font-normal">/ 95 min</span></span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1 italic">
+                  Does not qualify: below structural threshold of 95 receivers.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Layer 3 */}
+          <div className={`p-4 rounded-xl border font-mono transition ${
+            features?.layer3_candidate
+              ? 'bg-rose-950/20 border-rose-600/60 text-rose-300'
+              : 'bg-slate-900/30 border-slate-800/70 text-slate-400'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase">Layer 3: Terminal Node</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                features?.layer3_candidate
+                  ? 'bg-rose-500/20 border border-rose-500/40 text-rose-300'
+                  : 'bg-slate-800 text-slate-500'
+              }`}>
+                {features?.layer3_candidate ? 'CANDIDATE' : 'NOT QUALIFIED'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-2">
+              Final cash-out or automation-controlled terminal disbursement node.
+            </p>
+            {features?.layer3_candidate && features.layer3_reasons.length > 0 && (
+              <div className="mt-3 pt-2 border-t border-rose-900/40 space-y-1.5">
+                <div className="text-[10px] text-rose-300/90 font-bold uppercase tracking-wider">
+                  {features.layer3_reasons.some(r => r.code === 'AUTOMATION_DEVICE_ACTIVITY')
+                    ? 'Triggered Mode B: Automated Outflow Drain'
+                    : features.layer3_reasons.some(r => r.code === 'TERMINAL_FLOW_SINK')
+                    ? 'Triggered Mode A: Terminal Accumulation Sink'
+                    : 'Triggered Mode C: Concentrated IP Sink'}
+                </div>
+                {features.layer3_reasons.map((r, i) => (
+                  <div key={i} className="text-[10px] text-rose-200/90 bg-rose-950/30 p-1.5 rounded border border-rose-900/30 space-y-0.5">
+                    <div className="flex justify-between items-center text-[9px] font-bold text-rose-400">
+                      <span>{r.code}</span>
+                      <span>Obs: {r.observed_value} {r.threshold !== null && r.threshold !== undefined ? `| Thr: ${r.threshold}` : ''}</span>
+                    </div>
+                    <div className="text-slate-300 text-[10px] leading-tight">{r.description}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Investigative Forensic Distinction: Layer 3 vs. Layer 2 */}
+        {features?.layer3_candidate && !features?.layer2_candidate && ((features?.outgoing_txn_count ?? 0) > 0 || (features?.fan_out ?? 0) > 0) && (
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 space-y-2.5 font-mono">
+            <div className="flex items-center space-x-2 text-cyan-400">
+              <Info className="w-4 h-4 shrink-0" />
+              <span className="text-xs font-bold uppercase tracking-wide">
+                Investigative Forensic Distinction: Layer 3 vs. Layer 2 Classification
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div className="bg-[#0b0f19] border border-slate-800/80 p-3 rounded-lg space-y-1.5">
+                <div className="text-[11px] font-bold text-slate-300 flex items-center justify-between">
+                  <span>Why NOT Layer 2 (Distributor)?</span>
+                  <span className="text-slate-500 font-normal">Structural Classifier</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  This account has <span className="text-cyan-300 font-semibold">{features?.fan_out ?? detail.unique_receivers} unique receivers</span> across <span className="text-cyan-300 font-semibold">{features?.outgoing_txn_count ?? detail.outbound_transaction_count} outbound transfers</span>.
+                  The structural Layer 2 Distributor classifier strictly requires high fan-out of <span className="text-amber-300 font-semibold">≥ 95 unique receivers</span> and <span className="text-amber-300 font-semibold">≥ 95 outbound transactions</span>.
+                  Therefore, this account does NOT qualify as a wide-scale structural distributor.
+                </p>
+              </div>
+
+              <div className="bg-[#0b0f19] border border-slate-800/80 p-3 rounded-lg space-y-1.5">
+                <div className="text-[11px] font-bold text-rose-300 flex items-center justify-between">
+                  <span>Why Layer 3 (Terminal / Cash-Out)?</span>
+                  <span className="text-rose-400 font-normal">Automated Outflow Drain</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  All <span className="text-rose-300 font-semibold">{features?.web_emulator_txn_count ?? 0} outgoing transactions</span> were executed via <span className="text-rose-300 font-semibold">Web_Emulator</span> (automated environment) discharging <span className="text-rose-300 font-semibold">₹{(features?.outgoing_volume ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> (exceeding the ₹100,000 threshold).
+                  Coupled with a <span className="text-amber-300 font-semibold">{Math.round((features?.pass_through_ratio ?? 0) * 100)}% pass-through ratio</span> in the 3–15 min window, it exhibits automated terminal extraction rather than wide distribution.
+                </p>
+              </div>
+            </div>
+            <div className="text-[10px] text-slate-500 pt-1 border-t border-slate-800/60">
+              *Investigative indicator derived deterministically from transaction headers and device fingerprints. Not a legal conclusion or declaration of criminality.
+            </div>
+          </div>
+        )}
+
+        {/* Step 5A 3-15 Minute Pass-Through Velocity Detection Panel */}
+        <div className="border border-slate-800/90 rounded-xl p-4 bg-slate-900/40 font-mono space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center space-x-2">
+              <Zap className="w-4 h-4 text-amber-400" />
+              <span className="text-xs font-bold uppercase text-slate-200">
+                Step 5A: 3–15 Minute Pass-Through Velocity Detection
+              </span>
+            </div>
+            <span className={`text-[10px] px-2.5 py-0.5 rounded font-bold uppercase ${
+              features?.pass_through_candidate
+                ? 'bg-amber-500/20 border border-amber-500/40 text-amber-400 animate-pulse'
+                : 'bg-slate-800 text-slate-500 border border-slate-700'
+            }`}>
+              {features?.pass_through_candidate ? '⚡ PASS-THROUGH VELOCITY CANDIDATE' : 'NOT VELOCITY CANDIDATE'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div className="bg-[#0b0f19] p-3 rounded-lg border border-slate-800">
+              <span className="text-[10px] text-slate-500 block uppercase">Pass-Through Ratio</span>
+              <span className="text-base font-bold text-cyan-400">
+                {features?.pass_through_ratio !== null && features?.pass_through_ratio !== undefined
+                  ? `${(features.pass_through_ratio * 100).toFixed(1)}%`
+                  : 'N/A'}
+              </span>
+              <span className="text-[10px] text-slate-500 block mt-0.5">Threshold: ≥ 90.0%</span>
+            </div>
+
+            <div className="bg-[#0b0f19] p-3 rounded-lg border border-slate-800">
+              <span className="text-[10px] text-slate-500 block uppercase">Qualifying Outbound Txs</span>
+              <span className="text-base font-bold text-slate-100">
+                {features?.pass_through_outgoing_transaction_count ?? 0}
+              </span>
+              <span className="text-[10px] text-slate-500 block mt-0.5">Threshold: ≥ 2 txs</span>
+            </div>
+
+            <div className="bg-[#0b0f19] p-3 rounded-lg border border-slate-800">
+              <span className="text-[10px] text-slate-500 block uppercase">Attributed Volume</span>
+              <span className="text-base font-bold text-emerald-400">
+                ₹{((features?.pass_through_attributed_volume ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <span className="text-[10px] text-slate-500 block mt-0.5">Within 3–15 min window</span>
+            </div>
+
+            <div className="bg-[#0b0f19] p-3 rounded-lg border border-slate-800">
+              <span className="text-[10px] text-slate-500 block uppercase">Median Window Latency</span>
+              <span className="text-base font-bold text-purple-400">
+                {features?.median_incoming_to_outgoing_seconds
+                  ? `${Math.floor(features.median_incoming_to_outgoing_seconds / 60)}m ${Math.round(features.median_incoming_to_outgoing_seconds % 60)}s`
+                  : 'N/A'}
+              </span>
+              <span className="text-[10px] text-slate-500 block mt-0.5">Window: [180s, 900s]</span>
+            </div>
+          </div>
+
+          {/* Velocity Events Table if any */}
+          {velocity && velocity.events.length > 0 && (
+            <div className="pt-2">
+              <div className="text-[11px] font-semibold text-slate-400 mb-2 flex items-center space-x-1.5">
+                <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Qualifying 3–15 Minute Pass-Through Events ({velocity.events.length})</span>
+              </div>
+              <div className="max-h-48 overflow-y-auto border border-slate-800 rounded-lg">
+                <table className="w-full text-left text-[11px] font-mono">
+                  <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 sticky top-0">
+                    <tr>
+                      <th className="py-2 px-3">Inbound Tx</th>
+                      <th className="py-2 px-3">Outbound Tx</th>
+                      <th className="py-2 px-3">Inbound Time</th>
+                      <th className="py-2 px-3">Outbound Time</th>
+                      <th className="py-2 px-3">Delay</th>
+                      <th className="py-2 px-3">Attributed Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/50 bg-[#070b12] text-slate-300">
+                    {velocity.events.map((ev, idx) => (
+                      <tr key={idx} className="hover:bg-slate-800/30">
+                        <td className="py-2 px-3 text-cyan-400 font-semibold">{ev.incoming_transaction_id}</td>
+                        <td className="py-2 px-3 text-purple-400 font-semibold">{ev.outgoing_transaction_id}</td>
+                        <td className="py-2 px-3 text-slate-400">{ev.incoming_timestamp.replace('T', ' ')}</td>
+                        <td className="py-2 px-3 text-slate-400">{ev.outgoing_timestamp.replace('T', ' ')}</td>
+                        <td className="py-2 px-3 text-amber-300 font-semibold">
+                          {Math.floor(ev.delay_seconds / 60)}m {ev.delay_seconds % 60}s ({ev.delay_seconds}s)
+                        </td>
+                        <td className="py-2 px-3 text-emerald-400 font-semibold">
+                          ₹{ev.attributed_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Transaction History Section */}
       <div id="transaction-history" className="bg-[#0b0f19] border border-slate-800 rounded-xl overflow-hidden shadow-xl space-y-0">
         {/* Table Header Filter Toolbar */}
@@ -321,8 +610,8 @@ export const AccountView: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                txData.items.map((tx: TransactionItem) => (
-                  <tr key={tx.Transaction_ID} className="hover:bg-slate-800/40 transition">
+                txData.items.map((tx: TransactionItem, idx: number) => (
+                  <tr key={`${tx.Transaction_ID}-${idx}`} className="hover:bg-slate-800/40 transition">
                     <td className="py-3 px-4 font-semibold text-slate-200">
                       {tx.Transaction_ID}
                     </td>
@@ -348,11 +637,11 @@ export const AccountView: React.FC = () => {
                       {tx.Narration}
                     </td>
                     <td className="py-3 px-4 text-slate-300">{tx.IP_Address}</td>
-                    <td className="py-3 px-4 text-slate-500 italic text-[11px]">
-                      Unavailable
+                    <td className="py-3 px-4 text-slate-300 text-[11px]">
+                      {tx.Timestamp ? tx.Timestamp.replace('T', ' ') : '—'}
                     </td>
-                    <td className="py-3 px-4 text-slate-500 italic text-[11px]">
-                      Unavailable
+                    <td className="py-3 px-4 text-slate-300 text-[11px]">
+                      {tx.Device_Type || '—'}
                     </td>
                   </tr>
                 ))

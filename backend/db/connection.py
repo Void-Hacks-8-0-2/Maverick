@@ -63,7 +63,7 @@ def get_db() -> duckdb.DuckDBPyConnection:
         
         _dataset_path = target_path
 
-    return _con
+    return _con.cursor()
 
 
 def init_analytical_tier(con: duckdb.DuckDBPyConnection) -> None:

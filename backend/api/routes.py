@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from backend.db.connection import get_db
 from backend.services.graph_service import get_account_graph, get_account_trace
 from backend.features import AccountFeatures, get_account_features
+from backend.detection.velocity_detector import get_velocity_events
 
 router = APIRouter()
 
@@ -352,3 +353,45 @@ def get_trace(
     con = get_db()
     acc = account_id.strip()
     return get_account_trace(con, acc, max_hops=4, max_nodes=max_nodes)
+
+
+@router.get("/accounts/{account_id}/velocity")
+def get_account_velocity_events(
+    account_id: str,
+    limit: int = Query(100, ge=1, le=500)
+):
+    """
+    Step 5A: Returns event-level pass-through velocity explainability for one account.
+
+    Each event represents one outgoing transaction matched to a qualifying incoming
+    transaction within the 3-15 minute window.
+
+    Field provenance:
+        OBSERVED  -- incoming_transaction_id, outgoing_transaction_id,
+                     incoming_timestamp, outgoing_timestamp,
+                     incoming_amount, outgoing_amount
+        DERIVED   -- delay_seconds, attributed_amount, window label
+
+    Returns an empty list if the account has no qualifying events.
+    INVESTIGATIVE INDICATOR ONLY -- not a legal conclusion.
+    """
+    con = get_db()
+    acc = account_id.strip()
+
+    # Verify account exists
+    exists = con.execute(
+        "SELECT COUNT(*) FROM accounts_dimension WHERE account_number = ?", [acc]
+    ).fetchone()[0]
+    if not exists:
+        raise HTTPException(status_code=404, detail=f"Account '{account_id}' not found in dataset")
+
+    events = get_velocity_events(con, acc, limit=limit)
+    return {
+        "account_id": acc,
+        "event_count": len(events),
+        "qualifying_window": "3_TO_15_MINUTES",
+        "window_min_seconds": 180,
+        "window_max_seconds": 900,
+        "provenance": "DERIVED",
+        "events": events,
+    }

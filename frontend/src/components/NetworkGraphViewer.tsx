@@ -42,8 +42,8 @@ export const NetworkGraphViewer: React.FC<NetworkGraphViewerProps> = ({
 
     if (nodes.length === 0) return;
 
-    // Instantiate directed Graphology graph
-    const graph = new Graph({ type: 'directed' });
+    // Instantiate directed Graphology multi-graph
+    const graph = new Graph({ type: 'directed', multi: true });
 
     // Compute circular or radial layout for initial positions
     const totalNodes = nodes.length;

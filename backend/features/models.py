@@ -1,6 +1,7 @@
 """
 Feature Store Models for Operation 'ABHEDYA-CHAKRA'
-Base v0.3: Deterministic Account Behavioral Feature Contracts.
+Base v0.4: Deterministic Account Behavioral Feature Contracts.
+Step 5A: 3-15 Minute Pass-Through Velocity Detection fields added.
 Separates RAW TRANSACTIONS -> ANALYTICAL DIMENSION -> FEATURE STORE -> FORENSIC DETECTION -> EVIDENCE.
 """
 
@@ -134,10 +135,76 @@ class AccountFeatures(BaseModel):
     mule_risk_index: Optional[float] = Field(None, description="Deterministic 0-100 Mule Risk Index (Future Step)")
     risk_factors: Optional[str] = Field(None, description="Explainable factor breakdown (Future Step)")
     cycle_indicator: Optional[bool] = Field(None, description="Circular transaction routing indicator (Future Step)")
-    pass_through_ratio: Optional[float] = Field(None, description="Pass-through velocity ratio (Future Step)")
-    pass_through_event_count: Optional[int] = Field(None, description="3-15 min pass-through event count (Future Step)")
-    median_incoming_to_outgoing_seconds: Optional[float] = Field(None, description="Median pass-through latency (Future Step)")
-    rapid_outflow_count: Optional[int] = Field(None, description="Rapid disbursements count (Future Step)")
+
+    # 14. Step 5A -- Pass-Through Velocity Detection (3-15 minute window)
+    # Reused placeholders (formerly Future Step; now populated by Step 5A)
+    pass_through_ratio: Optional[float] = Field(
+        None,
+        description="Pass-through velocity ratio: qualifying_attributed_volume / total_incoming_volume. "
+                    "NULL when account has no incoming transactions."
+    )
+    pass_through_event_count: Optional[int] = Field(
+        None,
+        description="Count of qualifying outgoing transactions matched to incoming funds "
+                    "within the 3-15 minute window."
+    )
+    median_incoming_to_outgoing_seconds: Optional[float] = Field(
+        None,
+        description="Median delay (seconds) between incoming and matched outgoing transactions "
+                    "within the qualifying 3-15 minute window."
+    )
+    rapid_outflow_count: Optional[int] = Field(
+        None,
+        description="Count of outgoing transactions with at least one eligible incoming "
+                    "transaction in the 3-15 minute qualifying window."
+    )
+    # New Step 5A fields
+    pass_through_candidate: Optional[bool] = Field(
+        None,
+        description="Pass-Through Velocity Candidate: pass_through_ratio >= 0.90 AND "
+                    "qualifying_outgoing_transaction_count >= 2. "
+                    "INVESTIGATIVE INDICATOR ONLY -- not a legal conclusion."
+    )
+    pass_through_incoming_volume: Optional[float] = Field(
+        None,
+        description="Total incoming (inbound) monetary volume for this account across all transactions."
+    )
+    pass_through_attributed_volume: Optional[float] = Field(
+        None,
+        description="Total outgoing volume attributed to qualifying 3-15 minute pass-through events "
+                    "(capped per incoming transaction to prevent double-counting)."
+    )
+    pass_through_outgoing_transaction_count: Optional[int] = Field(
+        None,
+        description="Count of outgoing transactions participating in qualifying 3-15 minute "
+                    "pass-through events."
+    )
+    pass_through_outgoing_volume: Optional[float] = Field(
+        None,
+        description="Total outgoing amount across qualifying pass-through outgoing transactions."
+    )
+    under_3_minute_event_count: Optional[int] = Field(
+        None,
+        description="Count of outgoing transactions with at least one incoming-to-outgoing delay "
+                    "< 3 minutes (BEFORE_WINDOW bucket)."
+    )
+    over_15_minute_event_count: Optional[int] = Field(
+        None,
+        description="Count of outgoing transactions with at least one incoming-to-outgoing delay "
+                    "> 15 minutes (AFTER_WINDOW bucket)."
+    )
+    velocity_classification_version: Optional[str] = Field(
+        None,
+        description="Step 5A velocity classification schema version."
+    )
+    velocity_classification_computed_at: Optional[datetime] = Field(
+        None,
+        description="Timestamp when Step 5A velocity classification was computed."
+    )
+    velocity_classification_provenance: Optional[str] = Field(
+        None,
+        description="Step 5A provenance marker (DERIVED)."
+    )
 
     # 14. Provenance & Versioning Metadata
     feature_version: str = Field("v1", description="Feature schema definition version")

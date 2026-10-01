@@ -208,14 +208,25 @@ def compute_account_features(con: duckdb.DuckDBPyConnection) -> int:
             CAST('v1' AS VARCHAR) AS classification_version,
             CAST(NULL AS TIMESTAMP) AS classification_computed_at,
             CAST('CANDIDATE_CLASSIFICATION' AS VARCHAR) AS classification_provenance,
-            -- Future Detection Placeholders (Prohibited in Step 4; reserved for later steps)
+            -- Future Detection Placeholders (reserved for later steps)
             CAST(NULL AS DOUBLE) AS mule_risk_index,
             CAST(NULL AS VARCHAR) AS risk_factors,
             CAST(NULL AS BOOLEAN) AS cycle_indicator,
+            -- Step 5A Velocity placeholders (populated by compute_velocity_features)
             CAST(NULL AS DOUBLE) AS pass_through_ratio,
             CAST(NULL AS BIGINT) AS pass_through_event_count,
             CAST(NULL AS DOUBLE) AS median_incoming_to_outgoing_seconds,
             CAST(NULL AS BIGINT) AS rapid_outflow_count,
+            CAST(NULL AS BOOLEAN) AS pass_through_candidate,
+            CAST(NULL AS DOUBLE) AS pass_through_incoming_volume,
+            CAST(NULL AS DOUBLE) AS pass_through_attributed_volume,
+            CAST(NULL AS BIGINT) AS pass_through_outgoing_transaction_count,
+            CAST(NULL AS DOUBLE) AS pass_through_outgoing_volume,
+            CAST(NULL AS BIGINT) AS under_3_minute_event_count,
+            CAST(NULL AS BIGINT) AS over_15_minute_event_count,
+            CAST(NULL AS VARCHAR) AS velocity_classification_version,
+            CAST(NULL AS TIMESTAMP) AS velocity_classification_computed_at,
+            CAST(NULL AS VARCHAR) AS velocity_classification_provenance,
             -- Metadata & Provenance
             'v1' AS feature_version,
             CURRENT_TIMESTAMP::TIMESTAMP AS computed_at,
@@ -239,7 +250,12 @@ def compute_account_features(con: duckdb.DuckDBPyConnection) -> int:
     from backend.detection.role_classifier import classify_account_roles
     classify_account_roles(con)
 
+    # Step 5A: Run deterministic 3-15 minute pass-through velocity detection
+    from backend.detection.velocity_detector import compute_velocity_features
+    compute_velocity_features(con)
+
     return con.execute("SELECT count(*) FROM account_features").fetchone()[0]
+
 
 
 
@@ -248,9 +264,11 @@ def get_account_features(con: duckdb.DuckDBPyConnection, account_id: str) -> Opt
     Retrieves typed behavioral features for a single account.
     Returns None if the account is not found in the feature store.
     """
-    cols = [d[0] for d in con.execute("DESCRIBE account_features").fetchall()]
-    row = con.execute("SELECT * FROM account_features WHERE account_number = ?", [account_id.strip()]).fetchone()
+    cursor = con.cursor()
+    cursor.execute("SELECT * FROM account_features WHERE account_number = ?", [account_id.strip()])
+    row = cursor.fetchone()
     if not row:
         return None
+    cols = [d[0] for d in cursor.description]
     data = dict(zip(cols, row))
     return AccountFeatures(**data)

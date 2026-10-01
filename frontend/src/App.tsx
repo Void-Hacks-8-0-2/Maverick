@@ -16,6 +16,7 @@ export const App: React.FC = () => {
             <Route path="/" element={<CommandCenter />} />
             <Route path="/investigate" element={<NetworkGraph />} />
             <Route path="/account/:id" element={<AccountView />} />
+            <Route path="/accounts/:id" element={<AccountView />} />
             <Route path="/transactions" element={<TransactionExplorer />} />
             <Route path="/graph" element={<NetworkGraph />} />
             <Route path="*" element={<Navigate to="/" replace />} />
