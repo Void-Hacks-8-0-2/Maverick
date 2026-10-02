@@ -59,31 +59,31 @@ function fmt(n: number) {
 
 // ─── Summary Bar ─────────────────────────────────────────────────────────────
 const SummaryBar: React.FC<{ summary: TimelineSummary }> = ({ summary }) => (
-  <div className="surface-l2 rounded-xl border border-white/[0.06] p-3.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs font-mono">
+  <div className="rounded-xl border border-slate-200 bg-white p-3.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs font-mono shadow-xs">
     {[
-      { label: 'EVENTS', value: summary.total_events.toLocaleString(), color: 'text-slate-100' },
-      { label: 'TRANSACTIONS', value: summary.transaction_count.toLocaleString(), color: 'text-slate-100' },
-      { label: 'INFLOW', value: fmt(summary.incoming_volume), color: 'text-emerald-400' },
-      { label: 'OUTFLOW', value: fmt(summary.outgoing_volume), color: 'text-rose-400' },
-      { label: 'VELOCITY ALERTS', value: summary.velocity_event_count.toLocaleString(), color: 'text-amber-300' },
-      { label: 'FIFO EDGES', value: summary.attribution_event_count.toLocaleString(), color: 'text-purple-300' },
+      { label: 'EVENTS', value: summary.total_events.toLocaleString(), color: 'text-slate-900' },
+      { label: 'TRANSACTIONS', value: summary.transaction_count.toLocaleString(), color: 'text-slate-900' },
+      { label: 'INFLOW', value: fmt(summary.incoming_volume), color: 'text-emerald-700 font-semibold' },
+      { label: 'OUTFLOW', value: fmt(summary.outgoing_volume), color: 'text-rose-700 font-semibold' },
+      { label: 'VELOCITY ALERTS', value: summary.velocity_event_count.toLocaleString(), color: 'text-amber-700 font-semibold' },
+      { label: 'FIFO EDGES', value: summary.attribution_event_count.toLocaleString(), color: 'text-violet-700 font-semibold' },
     ].map(({ label, value, color }) => (
-      <div key={label} className="bg-[#06080d]/60 border border-white/[0.04] rounded-lg px-3 py-2">
-        <div className="text-slate-400 uppercase text-[9px] tracking-wider mb-0.5">{label}</div>
+      <div key={label} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+        <div className="text-slate-500 uppercase text-[9px] tracking-wider mb-0.5 font-semibold">{label}</div>
         <div className={`font-semibold text-xs sm:text-sm tabular-nums ${color}`}>{value}</div>
       </div>
     ))}
   </div>
 );
 
-// ─── Event Card (Neutral dark surface with semantic pip) ─────────────────────
+// ─── Event Card (Light surface with semantic pip) ─────────────────────
 const EventCard: React.FC<{ event: TimelineEvent; highlight?: string }> = ({ event, highlight }) => {
   const [open, setOpen] = useState(false);
   const Icon = EVENT_ICON[event.event_type] ?? Activity;
 
   return (
     <div
-      className="relative flex gap-3 rounded-lg border border-white/[0.06] bg-[#0b0f19]/70 backdrop-blur-sm p-3.5 cursor-pointer transition-all hover:border-white/[0.14] hover:bg-[#0e1424]/80 shadow-md"
+      className="relative flex gap-3 rounded-lg border border-slate-200 bg-white p-3.5 cursor-pointer transition-all hover:border-violet-300 hover:shadow-xs shadow-xs"
       onClick={() => setOpen((v) => !v)}
     >
       <div className={`shrink-0 mt-0.5 ${EVENT_ICON_COLOR[event.event_type]}`}>
@@ -92,39 +92,39 @@ const EventCard: React.FC<{ event: TimelineEvent; highlight?: string }> = ({ eve
 
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-slate-100 font-medium text-xs font-mono leading-tight">{event.title}</span>
-          <span className="text-slate-400 text-[10px] font-mono whitespace-nowrap shrink-0 tabular-nums">
+          <span className="text-slate-900 font-semibold text-xs font-mono leading-tight">{event.title}</span>
+          <span className="text-slate-500 text-[10px] font-mono whitespace-nowrap shrink-0 tabular-nums">
             {event.timestamp.replace('T', ' ').slice(0, 19)}
           </span>
         </div>
-        <p className="text-slate-400 text-xs font-mono leading-snug truncate">{event.description}</p>
+        <p className="text-slate-600 text-xs font-mono leading-snug truncate">{event.description}</p>
 
         {event.amount !== undefined && event.amount > 0 && (
           <div className="flex items-center gap-1.5 pt-0.5 font-mono">
             {event.direction === 'INCOMING' ? (
-              <ArrowDown className="w-3.5 h-3.5 text-emerald-400" />
+              <ArrowDown className="w-3.5 h-3.5 text-emerald-600" />
             ) : event.direction === 'OUTGOING' ? (
-              <ArrowUp className="w-3.5 h-3.5 text-rose-400" />
+              <ArrowUp className="w-3.5 h-3.5 text-rose-600" />
             ) : null}
-            <span className={`text-xs font-semibold tabular-nums ${event.direction === 'INCOMING' ? 'text-emerald-400' : event.direction === 'OUTGOING' ? 'text-rose-400' : 'text-slate-200'}`}>
+            <span className={`text-xs font-semibold tabular-nums ${event.direction === 'INCOMING' ? 'text-emerald-700' : event.direction === 'OUTGOING' ? 'text-rose-700' : 'text-slate-700'}`}>
               {fmt(event.amount)}
             </span>
           </div>
         )}
 
         {event.source_account && highlight && event.source_account !== highlight && (
-          <div className="text-[10px] text-slate-400 font-mono">
+          <div className="text-[10px] text-slate-500 font-mono">
             {event.source_account}
             {event.destination_account ? ` → ${event.destination_account}` : ''}
           </div>
         )}
 
         {open && Object.keys(event.details).length > 0 && (
-          <div className="mt-2.5 pt-2 border-t border-white/[0.06] space-y-1">
+          <div className="mt-2.5 pt-2 border-t border-slate-200 space-y-1">
             {Object.entries(event.details).map(([k, v]) => (
               <div key={k} className="flex justify-between gap-2 text-[10px] font-mono">
-                <span className="text-slate-400 uppercase shrink-0">{k}:</span>
-                <span className="text-slate-300 text-right break-all">
+                <span className="text-slate-500 uppercase shrink-0 font-medium">{k}:</span>
+                <span className="text-slate-800 text-right break-all">
                   {Array.isArray(v) ? v.join(', ') : typeof v === 'object' ? JSON.stringify(v) : String(v)}
                 </span>
               </div>
@@ -204,19 +204,19 @@ export const TimelineInvestigationView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* ── Header ──────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pb-4 border-b border-white/[0.06]">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pb-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <div>
-          <div className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase mb-1">
+          <div className="text-[10px] font-mono tracking-widest font-semibold uppercase mb-1" style={{ color: 'var(--accent)' }}>
             FORENSIC CHRONOLOGY
           </div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-slate-100 tracking-tight font-sans flex items-center gap-2">
-            <Clock className="w-5 h-5 text-cyan-400" />
+          <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight font-sans flex items-center gap-2">
+            <Clock className="w-5 h-5 text-violet-700" />
             <span>Timeline Investigation</span>
           </h1>
-          <p className="text-xs text-slate-400 font-mono mt-0.5">
+          <p className="text-xs text-slate-500 font-mono mt-0.5">
             Chronological forensic event stream across 2M transactions
             {rangeInfo && (
-              <span className="ml-2 text-slate-400">
+              <span className="ml-2 text-slate-500">
                 [{rangeInfo.start.slice(0, 10)} → {rangeInfo.end.slice(0, 10)}]
               </span>
             )}
@@ -226,8 +226,8 @@ export const TimelineInvestigationView: React.FC = () => {
           onClick={() => setShowFilters((v) => !v)}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-mono transition ${
             showFilters
-              ? 'bg-slate-800 border-cyan-500/50 text-cyan-300 font-medium'
-              : 'bg-[#06080d]/80 border-white/[0.08] text-slate-400 hover:text-slate-200'
+              ? 'bg-violet-50 border-violet-300 text-violet-700 font-semibold'
+              : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900'
           }`}
         >
           <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -236,7 +236,7 @@ export const TimelineInvestigationView: React.FC = () => {
       </div>
 
       {/* ── Search & Filter Controls ────────────────────────────── */}
-      <div className="surface-l1 rounded-xl p-4 border border-white/[0.06] space-y-3">
+      <div className="bg-white rounded-xl p-4 border border-slate-200 space-y-3 shadow-xs">
         <form onSubmit={handleSearch} className="flex flex-wrap gap-2">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
@@ -245,12 +245,12 @@ export const TimelineInvestigationView: React.FC = () => {
               value={accountInput}
               onChange={(e) => setAccountInput(e.target.value)}
               placeholder="Account ID (leave blank for global)..."
-              className="w-full bg-[#06080d]/80 border border-white/[0.08] focus:border-cyan-500/60 rounded pl-8 pr-3 py-1.5 text-xs font-mono text-slate-100 placeholder-slate-400 focus:outline-none transition"
+              className="w-full bg-slate-50 border border-slate-200 focus:border-violet-600 rounded pl-8 pr-3 py-1.5 text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none transition"
             />
           </div>
           <button
             type="submit"
-            className="px-4 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-mono font-semibold rounded transition"
+            className="px-4 py-1.5 bg-violet-700 hover:bg-violet-600 text-white text-xs font-mono font-semibold rounded transition"
           >
             Investigate
           </button>
@@ -258,7 +258,7 @@ export const TimelineInvestigationView: React.FC = () => {
             <button
               type="button"
               onClick={() => { setAccountInput(''); setAccountId(''); setPage(1); }}
-              className="px-3 py-1.5 border border-white/[0.08] bg-[#06080d]/80 text-slate-400 hover:text-slate-200 text-xs font-mono rounded transition"
+              className="px-3 py-1.5 border border-slate-200 bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-mono rounded transition"
             >
               Global View
             </button>
@@ -267,31 +267,31 @@ export const TimelineInvestigationView: React.FC = () => {
 
         {/* Filter Drawer */}
         {showFilters && (
-          <div className="pt-3 border-t border-white/[0.06] grid grid-cols-2 md:grid-cols-5 gap-3 text-xs font-mono">
+          <div className="pt-3 border-t border-slate-200 grid grid-cols-2 md:grid-cols-5 gap-3 text-xs font-mono">
             <div className="space-y-1">
-              <label className="text-slate-400 uppercase text-[9px] tracking-wider block">Start Time</label>
+              <label className="text-slate-500 uppercase text-[9px] tracking-wider block font-semibold">Start Time</label>
               <input
                 value={startTime}
                 onChange={(e) => { setStartTime(e.target.value); setPage(1); }}
                 placeholder="2026-09-15 00:00:00"
-                className="w-full bg-[#06080d]/80 border border-white/[0.08] rounded px-2.5 py-1 text-slate-200 text-xs focus:outline-none focus:border-cyan-500 transition"
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1 text-slate-800 text-xs focus:outline-none focus:border-violet-600 transition"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-slate-400 uppercase text-[9px] tracking-wider block">End Time</label>
+              <label className="text-slate-500 uppercase text-[9px] tracking-wider block font-semibold">End Time</label>
               <input
                 value={endTime}
                 onChange={(e) => { setEndTime(e.target.value); setPage(1); }}
                 placeholder="2026-09-29 23:59:58"
-                className="w-full bg-[#06080d]/80 border border-white/[0.08] rounded px-2.5 py-1 text-slate-200 text-xs focus:outline-none focus:border-cyan-500 transition"
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1 text-slate-800 text-xs focus:outline-none focus:border-violet-600 transition"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-slate-400 uppercase text-[9px] tracking-wider block">Direction</label>
+              <label className="text-slate-500 uppercase text-[9px] tracking-wider block font-semibold">Direction</label>
               <select
                 value={direction}
                 onChange={(e) => { setDirection(e.target.value); setPage(1); }}
-                className="w-full bg-[#06080d]/80 border border-white/[0.08] rounded px-2 py-1 text-slate-200 text-xs focus:outline-none focus:border-cyan-500 transition"
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-slate-800 text-xs focus:outline-none focus:border-violet-600 transition"
               >
                 <option value="all">All</option>
                 <option value="in">Incoming</option>
@@ -299,22 +299,22 @@ export const TimelineInvestigationView: React.FC = () => {
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-slate-400 uppercase text-[9px] tracking-wider block">Payment Mode</label>
+              <label className="text-slate-500 uppercase text-[9px] tracking-wider block font-semibold">Payment Mode</label>
               <select
                 value={paymentMode}
                 onChange={(e) => { setPaymentMode(e.target.value); setPage(1); }}
-                className="w-full bg-[#06080d]/80 border border-white/[0.08] rounded px-2 py-1 text-slate-200 text-xs focus:outline-none focus:border-cyan-500 transition"
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-slate-800 text-xs focus:outline-none focus:border-violet-600 transition"
               >
                 <option value="">All</option>
                 {['UPI', 'IMPS', 'NEFT', 'RTGS'].map((m) => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-slate-400 uppercase text-[9px] tracking-wider block">Event Type</label>
+              <label className="text-slate-500 uppercase text-[9px] tracking-wider block font-semibold">Event Type</label>
               <select
                 value={eventType}
                 onChange={(e) => { setEventType(e.target.value); setPage(1); }}
-                className="w-full bg-[#06080d]/80 border border-white/[0.08] rounded px-2 py-1 text-slate-200 text-xs focus:outline-none focus:border-cyan-500 transition"
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-slate-800 text-xs focus:outline-none focus:border-violet-600 transition"
               >
                 {EVENT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
@@ -330,8 +330,8 @@ export const TimelineInvestigationView: React.FC = () => {
               onClick={() => { setEventType(value); setPage(1); }}
               className={`px-2.5 py-1 rounded text-[11px] font-mono transition border ${
                 eventType === value
-                  ? 'bg-slate-800 border-cyan-500/50 text-cyan-300 font-medium'
-                  : 'border-white/[0.06] bg-[#06080d]/60 text-slate-400 hover:text-slate-200'
+                  ? 'bg-violet-50 border-violet-300 text-violet-700 font-semibold'
+                  : 'border-slate-200 bg-slate-50 text-slate-600 hover:text-slate-900'
               }`}
             >
               {label}
@@ -345,15 +345,15 @@ export const TimelineInvestigationView: React.FC = () => {
 
       {/* ── Context Banner ──────────────────────────────────────── */}
       {accountId && (
-        <div className="flex items-center gap-2 bg-[#0b0f19] border border-cyan-500/30 rounded-lg px-4 py-2 text-xs font-mono text-cyan-300">
-          <ShieldAlert className="w-4 h-4 text-cyan-400" />
+        <div className="flex items-center gap-2 bg-violet-50 border border-violet-200 rounded-lg px-4 py-2 text-xs font-mono text-violet-900">
+          <ShieldAlert className="w-4 h-4 text-violet-700" />
           <span>Investigating subject:</span>
-          <span className="font-semibold text-slate-100">{accountId}</span>
+          <span className="font-semibold text-slate-900">{accountId}</span>
           {summary?.risk_role_findings && (
-            <span className="ml-3 text-slate-400">
-              Risk: <span className="text-rose-400 font-semibold">{String(summary.risk_role_findings.mule_risk_score ?? '—')}/100</span>
+            <span className="ml-3 text-slate-600">
+              Risk: <span className="text-rose-700 font-semibold">{String(summary.risk_role_findings.mule_risk_score ?? '—')}/100</span>
               {' &bull; '}
-              Role: <span className="text-purple-300">{String(summary.risk_role_findings.role ?? '—')}</span>
+              Role: <span className="text-violet-700 font-semibold">{String(summary.risk_role_findings.role ?? '—')}</span>
             </span>
           )}
         </div>
@@ -362,20 +362,20 @@ export const TimelineInvestigationView: React.FC = () => {
       {/* ── Event Stream with Single Subtle Spine ───────────────── */}
       <div className="space-y-3">
         {error && (
-          <div className="p-3 bg-rose-950/20 border border-rose-500/30 rounded-xl text-xs font-mono text-rose-300">
+          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-mono text-rose-700">
             {error}
           </div>
         )}
 
         {loading && (
-          <div className="flex items-center justify-center py-14 text-slate-400">
-            <Loader2 className="w-5 h-5 animate-spin mr-2 text-cyan-400" />
+          <div className="flex items-center justify-center py-14 text-slate-500">
+            <Loader2 className="w-5 h-5 animate-spin mr-2 text-violet-600" />
             <span className="text-xs font-mono">Building chronological timeline…</span>
           </div>
         )}
 
         {!loading && events.length === 0 && !error && (
-          <div className="py-14 text-center text-slate-400 text-xs font-mono">
+          <div className="py-14 text-center text-slate-500 text-xs font-mono">
             No events found for selected timeline criteria.
           </div>
         )}
@@ -383,12 +383,12 @@ export const TimelineInvestigationView: React.FC = () => {
         {!loading && events.length > 0 && (
           <div className="relative space-y-2.5 pl-6">
             {/* Single subtle vertical spine */}
-            <div className="absolute left-2.5 top-2 bottom-2 w-px bg-white/[0.08]" />
+            <div className="absolute left-2.5 top-2 bottom-2 w-px bg-slate-200" />
 
             {events.map((event) => (
               <div key={event.event_id} className="relative">
                 {/* Discrete dot along the vertical spine */}
-                <div className={`absolute -left-6 top-4 w-2 h-2 rounded-full ring-2 ring-[#06080d] ${DOT_COLOR[event.event_type]}`} />
+                <div className={`absolute -left-6 top-4 w-2 h-2 rounded-full ring-2 ring-white ${DOT_COLOR[event.event_type]}`} />
                 <EventCard event={event} highlight={accountId} />
               </div>
             ))}
@@ -398,20 +398,20 @@ export const TimelineInvestigationView: React.FC = () => {
 
       {/* ── Pagination ───────────────────────────────────────────── */}
       {!loading && totalEvents > pageSize && (
-        <div className="flex items-center justify-between text-xs font-mono text-slate-400 border-t border-white/[0.06] pt-4">
+        <div className="flex items-center justify-between text-xs font-mono text-slate-600 border-t border-slate-200 pt-4">
           <span className="tabular-nums">{totalEvents.toLocaleString()} total events &bull; Page {page}</span>
           <div className="flex gap-2">
             <button
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
-              className="flex items-center gap-1 px-3 py-1.5 border border-white/[0.08] bg-[#06080d]/80 rounded disabled:opacity-30 hover:bg-slate-800 transition"
+              className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 bg-white rounded disabled:opacity-40 hover:bg-slate-50 transition"
             >
               <ChevronLeft className="w-3.5 h-3.5" /> Prev
             </button>
             <button
               disabled={!hasMore}
               onClick={() => setPage((p) => p + 1)}
-              className="flex items-center gap-1 px-3 py-1.5 border border-white/[0.08] bg-[#06080d]/80 rounded disabled:opacity-30 hover:bg-slate-800 transition"
+              className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 bg-white rounded disabled:opacity-40 hover:bg-slate-50 transition"
             >
               Next <ChevronRight className="w-3.5 h-3.5" />
             </button>

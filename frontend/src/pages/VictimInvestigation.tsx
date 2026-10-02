@@ -59,22 +59,32 @@ export const VictimInvestigation: React.FC = () => {
 
   useEffect(() => {
     if (!activeAccount) return;
+    // BUG 1 FIX: If the user switches account (or changes hops/horizon) before the
+    // investigation promise resolves, cancelled=true prevents the stale response
+    // from overwriting the state for the account the user most recently selected.
+    let cancelled = false;
 
     setLoading(true);
     setError(null);
     setCaseFileData(null);
     setCaseFileError(null);
+    setData(null);
 
     getVictimInvestigation(activeAccount, maxHops, horizonFilter)
       .then((res) => {
+        if (cancelled) return;
         setData(res);
         setLoading(false);
       })
       .catch((err) => {
+        if (cancelled) return;
         setError(err.message || `Failed to execute investigation for account ${activeAccount}`);
         setLoading(false);
       });
+
+    return () => { cancelled = true; };
   }, [activeAccount, maxHops, horizonFilter]);
+
 
   const handleCreateCaseFile = async () => {
     if (!activeAccount || !data) return;
@@ -126,7 +136,7 @@ export const VictimInvestigation: React.FC = () => {
       hop: n.hop,
       label: n.id,
       size: isRoot ? 22 : isTerminal ? 13 : 9,
-      color: isRoot ? '#00d9ff' : isTerminal ? '#f43f5e' : '#475569',
+      color: isRoot ? '#7c3aed' : isTerminal ? '#dc2626' : '#64748b',
     };
   }) || [];
 
@@ -139,13 +149,13 @@ export const VictimInvestigation: React.FC = () => {
     attributed_amount: e.attributed_amount,
     delay_seconds: e.delay_seconds,
     payment_mode: e.edge_type === 'ROOT_SEED' ? 'SEED' : 'FIFO',
-    color: e.edge_type === 'ROOT_SEED' ? '#00d9ff' : '#8b5cf6',
+    color: e.edge_type === 'ROOT_SEED' ? '#7c3aed' : '#94a3b8',
   })) || [];
 
   return (
     <div className="space-y-6">
       {/* Top Search & Filter Bar */}
-      <div className="surface-l1 border border-white/[0.06] rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-lg">
+      <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm">
         <form onSubmit={handleSearch} className="flex-1 flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -154,7 +164,7 @@ export const VictimInvestigation: React.FC = () => {
               value={inputAccount}
               onChange={(e) => setInputAccount(e.target.value)}
               placeholder="Enter subject account number (e.g., KKBK10000402)..."
-              className="w-full bg-[#06080d]/80 border border-white/[0.08] focus:border-cyan-500/60 rounded-lg pl-9 pr-3 py-2 text-xs font-mono text-slate-100 placeholder-slate-400 focus:outline-none transition"
+              className="w-full bg-white border border-slate-300 focus:border-violet-600 rounded-lg pl-9 pr-3 py-2 text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none transition"
             />
           </div>
 
@@ -162,7 +172,7 @@ export const VictimInvestigation: React.FC = () => {
             <select
               value={maxHops}
               onChange={(e) => setMaxHops(Number(e.target.value))}
-              className="bg-[#06080d]/80 border border-white/[0.08] rounded-lg px-2.5 py-2 text-xs font-mono text-slate-300 focus:outline-none focus:border-cyan-500"
+              className="bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:border-violet-600"
             >
               <option value={1}>1 Hop</option>
               <option value={2}>2 Hops</option>
@@ -174,7 +184,7 @@ export const VictimInvestigation: React.FC = () => {
             <select
               value={horizonFilter === undefined ? '' : horizonFilter}
               onChange={(e) => setHorizonFilter(e.target.value ? Number(e.target.value) : undefined)}
-              className="bg-[#06080d]/80 border border-white/[0.08] rounded-lg px-2.5 py-2 text-xs font-mono text-slate-300 focus:outline-none focus:border-cyan-500"
+              className="bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:border-violet-600"
             >
               <option value="">All Horizons</option>
               <option value={3600}>1 Hour</option>
@@ -186,7 +196,7 @@ export const VictimInvestigation: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold px-4 py-2 rounded-lg text-xs font-mono flex items-center gap-1.5 transition shrink-0 disabled:opacity-50"
+              className="bg-violet-700 hover:bg-violet-600 text-white font-semibold px-4 py-2 rounded-lg text-xs font-mono flex items-center gap-1.5 transition shrink-0 disabled:opacity-50 shadow-sm"
             >
               {loading ? (
                 <>
@@ -204,8 +214,8 @@ export const VictimInvestigation: React.FC = () => {
         </form>
 
         {/* Preset Sample Account Chips */}
-        <div className="flex items-center gap-1.5 border-t md:border-t-0 md:border-l border-white/[0.06] pt-2 md:pt-0 md:pl-3 text-xs font-mono shrink-0">
-          <span className="text-[10px] text-slate-400">Presets:</span>
+        <div className="flex items-center gap-1.5 border-t md:border-t-0 md:border-l border-slate-200 pt-2 md:pt-0 md:pl-3 text-xs font-mono shrink-0">
+          <span className="text-[10px] text-slate-500">Presets:</span>
           {PRESET_ACCOUNTS.map((acc) => (
             <button
               key={acc}
@@ -213,8 +223,8 @@ export const VictimInvestigation: React.FC = () => {
               onClick={() => handlePresetSelect(acc)}
               className={`text-[11px] font-mono px-2 py-0.5 rounded border transition ${
                 activeAccount === acc
-                  ? 'bg-slate-800 border-cyan-500/50 text-cyan-300 font-medium'
-                  : 'bg-[#06080d]/60 border-white/[0.06] text-slate-400 hover:text-slate-200'
+                  ? 'bg-violet-50 border-violet-300 text-violet-800 font-semibold'
+                  : 'bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
               {acc}
@@ -225,24 +235,24 @@ export const VictimInvestigation: React.FC = () => {
 
       {/* Loading State */}
       {loading && (
-        <div className="surface-l2 rounded-xl p-8 text-center space-y-4 shadow-xl border border-white/[0.06]">
-          <div className="inline-flex p-3 bg-cyan-950/40 border border-cyan-500/30 rounded-full text-cyan-400 animate-pulse">
+        <div className="bg-white rounded-xl p-8 text-center space-y-4 shadow-sm border border-slate-200">
+          <div className="inline-flex p-3 bg-violet-50 border border-violet-200 rounded-full text-violet-700 animate-pulse">
             <RefreshCw className="w-6 h-6 animate-spin" />
           </div>
-          <h2 className="text-base font-semibold font-mono text-slate-100">
+          <h2 className="text-base font-semibold font-mono text-slate-900">
             Running Forensic Multi-Hop Trace on {activeAccount}...
           </h2>
-          <div className="max-w-md mx-auto space-y-1.5 text-left text-xs font-mono text-slate-400 pt-2">
+          <div className="max-w-md mx-auto space-y-1.5 text-left text-xs font-mono text-slate-600 pt-2">
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-violet-600" />
               <span>Vectorized DuckDB extraction &amp; counterparties...</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-violet-600" />
               <span>Evaluating L1/L2/L3 mule roles &amp; 0-100 Mule Risk Index...</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-violet-600" />
               <span>Traversing temporal FIFO fund attribution &amp; rapid velocity...</span>
             </div>
           </div>
@@ -251,28 +261,28 @@ export const VictimInvestigation: React.FC = () => {
 
       {/* Error State */}
       {error && !loading && (
-        <div className="bg-rose-950/20 border border-rose-500/30 rounded-xl p-6 text-slate-200 space-y-2">
-          <div className="flex items-center space-x-2 text-rose-400 font-mono font-medium text-xs">
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-6 text-rose-800 space-y-2 shadow-sm">
+          <div className="flex items-center space-x-2 text-rose-700 font-mono font-medium text-xs">
             <AlertCircle className="w-4 h-4" />
             <span>INVESTIGATION QUERY ERROR</span>
           </div>
-          <p className="text-sm font-mono text-slate-300">{error}</p>
+          <p className="text-sm font-mono text-rose-900">{error}</p>
         </div>
       )}
 
       {/* Investigation Results */}
       {data && !loading && (
         <div className="space-y-6">
-          {/* UNIFIED SUBJECT DOSSIER HEADER (The Core Demo Surface) */}
-          <div className="surface-l2 rounded-xl p-5 sm:p-6 border border-white/[0.08] shadow-2xl space-y-5">
+          {/* UNIFIED SUBJECT DOSSIER HEADER */}
+          <div className="bg-white rounded-xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-5">
             {/* Row 1: Subject Identity & Primary Status Badges & Quick Forensic Actions */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200">
               <div className="flex flex-wrap items-center gap-3">
                 <div>
-                  <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase block">
+                  <span className="text-[10px] font-mono tracking-widest text-slate-500 uppercase block font-semibold">
                     INVESTIGATION SUBJECT
                   </span>
-                  <div className="text-2xl sm:text-3xl font-semibold font-mono text-slate-100 tracking-tight">
+                  <div className="text-2xl sm:text-3xl font-semibold font-mono text-slate-900 tracking-tight">
                     {data.account_number}
                   </div>
                 </div>
@@ -289,7 +299,7 @@ export const VictimInvestigation: React.FC = () => {
                   type="button"
                   onClick={handleCreateCaseFile}
                   disabled={caseFileLoading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-slate-950 font-mono text-xs font-semibold shadow-md transition"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-violet-700 hover:bg-violet-600 disabled:opacity-50 text-white font-mono text-xs font-semibold shadow-sm transition"
                 >
                   {caseFileLoading ? (
                     <>
@@ -307,7 +317,7 @@ export const VictimInvestigation: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => navigate(`/timeline?account_id=${data.account_number}`)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-[#06080d]/80 hover:bg-slate-800 border border-white/[0.08] text-slate-200 font-mono text-xs transition"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-mono text-xs transition"
                 >
                   <Clock className="w-3.5 h-3.5 text-slate-400" />
                   <span>Timeline</span>
@@ -316,7 +326,7 @@ export const VictimInvestigation: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => navigate(`/transactions?account=${data.account_number}`)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-[#06080d]/80 hover:bg-slate-800 border border-white/[0.08] text-slate-200 font-mono text-xs transition"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-mono text-xs transition"
                 >
                   <FileText className="w-3.5 h-3.5 text-slate-400" />
                   <span>Transactions</span>
@@ -324,8 +334,8 @@ export const VictimInvestigation: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => navigate(`/legal-freeze?account_id=${data.account_number}`)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-[#06080d]/80 hover:bg-slate-800 border border-white/[0.08] text-slate-200 font-mono text-xs transition"
+                  onClick={() => navigate(`/legal-freeze?account=${data.account_number}`)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-mono text-xs transition"
                 >
                   <Scale className="w-3.5 h-3.5 text-slate-400" />
                   <span>Draft Order</span>
@@ -334,7 +344,7 @@ export const VictimInvestigation: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => navigate(`/account/${data.account_number}`)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-[#06080d]/80 hover:bg-slate-800 border border-white/[0.08] text-slate-200 font-mono text-xs transition"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-mono text-xs transition"
                 >
                   <span>Profile</span>
                   <ExternalLink className="w-3 h-3 text-slate-400" />
@@ -342,27 +352,27 @@ export const VictimInvestigation: React.FC = () => {
               </div>
             </div>
 
-            {/* Row 2: Financial Metrics & Forensic Telemetry Strip (No disconnected cards) */}
+            {/* Row 2: Financial Metrics & Forensic Telemetry Strip */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-xs font-mono">
               <div className="space-y-0.5">
-                <span className="text-[10px] text-slate-400 uppercase block tracking-wider">ROOT INFLOW</span>
-                <span className="text-base sm:text-lg font-semibold text-emerald-400 tabular-nums">
+                <span className="text-[10px] text-slate-500 uppercase block tracking-wider">ROOT INFLOW</span>
+                <span className="text-base sm:text-lg font-semibold text-emerald-700 tabular-nums">
                   ₹{data.account_summary.observed_incoming_volume.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
                 <span className="text-[10px] text-slate-400 block">Total observed credits</span>
               </div>
 
               <div className="space-y-0.5">
-                <span className="text-[10px] text-slate-400 uppercase block tracking-wider">ROOT OUTFLOW</span>
-                <span className="text-base sm:text-lg font-semibold text-rose-400 tabular-nums">
+                <span className="text-[10px] text-slate-500 uppercase block tracking-wider">ROOT OUTFLOW</span>
+                <span className="text-base sm:text-lg font-semibold text-rose-700 tabular-nums">
                   ₹{data.account_summary.observed_outgoing_volume.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
                 <span className="text-[10px] text-slate-400 block">Root seed outflow</span>
               </div>
 
               <div className="space-y-0.5">
-                <span className="text-[10px] text-slate-400 uppercase block tracking-wider">OBSERVED NET DELTA</span>
-                <span className="text-base sm:text-lg font-semibold text-cyan-300 tabular-nums">
+                <span className="text-[10px] text-slate-500 uppercase block tracking-wider">OBSERVED NET DELTA</span>
+                <span className="text-base sm:text-lg font-semibold text-slate-900 tabular-nums">
                   {data.account_summary.observed_net_flow_delta >= 0 ? '+' : ''}
                   ₹{data.account_summary.observed_net_flow_delta.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
@@ -370,24 +380,24 @@ export const VictimInvestigation: React.FC = () => {
               </div>
 
               <div className="space-y-0.5">
-                <span className="text-[10px] text-slate-400 uppercase block tracking-wider">DOWNSTREAM ATTRIBUTION</span>
-                <span className="text-base sm:text-lg font-semibold text-slate-100 tabular-nums">
+                <span className="text-[10px] text-slate-500 uppercase block tracking-wider">DOWNSTREAM ATTRIBUTION</span>
+                <span className="text-base sm:text-lg font-semibold text-slate-900 tabular-nums">
                   ₹{data.trace.total_attributed_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
                 <span className="text-[10px] text-slate-400 block">Cumulative downstream</span>
               </div>
 
               <div className="space-y-0.5">
-                <span className="text-[10px] text-slate-400 uppercase block tracking-wider">PASS-THROUGH VELOCITY</span>
-                <span className="text-base sm:text-lg font-semibold text-amber-300 tabular-nums">
+                <span className="text-[10px] text-slate-500 uppercase block tracking-wider">PASS-THROUGH VELOCITY</span>
+                <span className="text-base sm:text-lg font-semibold text-amber-700 tabular-nums">
                   {(data.velocity.pass_through_ratio * 100).toFixed(0)}%
                 </span>
                 <span className="text-[10px] text-slate-400 block">{data.velocity.qualifying_event_count} paired (3-15m)</span>
               </div>
 
               <div className="space-y-0.5">
-                <span className="text-[10px] text-slate-400 uppercase block tracking-wider">NETWORK DEPTH</span>
-                <span className="text-base sm:text-lg font-semibold text-purple-300 tabular-nums">
+                <span className="text-[10px] text-slate-500 uppercase block tracking-wider">NETWORK DEPTH</span>
+                <span className="text-base sm:text-lg font-semibold text-violet-700 tabular-nums">
                   {data.trace.total_hops_found} Hops &bull; {data.terminals.length} Terminal
                 </span>
                 <span className="text-[10px] text-slate-400 block">{graphNodes.length} nodes &bull; {graphEdges.length} links</span>
@@ -395,10 +405,10 @@ export const VictimInvestigation: React.FC = () => {
             </div>
 
             {/* Row 3: Forensic Executive Synthesis Note */}
-            <div className="bg-[#06080d]/60 border border-white/[0.06] rounded-lg p-3 text-xs font-mono text-slate-300 flex items-start gap-2.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0 mt-1.5" />
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs font-mono text-slate-700 flex items-start gap-2.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-violet-600 shrink-0 mt-1.5" />
               <div className="leading-relaxed">
-                <span className="text-slate-400 font-semibold uppercase text-[10px] mr-1.5">FORENSIC SYNTHESIS:</span>
+                <span className="text-slate-600 font-semibold uppercase text-[10px] mr-1.5">FORENSIC SYNTHESIS:</span>
                 {data.evidence_summary.narrative}
               </div>
             </div>
@@ -406,28 +416,28 @@ export const VictimInvestigation: React.FC = () => {
 
           {/* Case File Generation Error */}
           {caseFileError && (
-            <div className="surface-l2 p-3.5 rounded-lg border border-rose-500/30 bg-rose-500/5 text-rose-300 text-xs font-mono flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <div className="p-3.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-800 text-xs font-mono flex items-center gap-2 shadow-sm">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>{caseFileError}</span>
             </div>
           )}
 
           {/* Generated Case File Dossier (If Active) */}
           {caseFileData && (
-            <div className="surface-l3 rounded-xl p-5 border border-cyan-500/40 shadow-2xl space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
+            <div className="bg-white rounded-xl p-5 border border-violet-200 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-slate-900 border border-cyan-500/30 rounded text-cyan-400">
+                  <div className="p-2 bg-violet-50 border border-violet-200 rounded text-violet-700">
                     <FileCheck className="w-4 h-4" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono font-semibold text-slate-200">CASE FILE GENERATED:</span>
-                      <span className="text-xs font-mono font-semibold text-cyan-300 bg-[#06080d] px-2 py-0.5 rounded border border-white/[0.06]">
+                      <span className="text-xs font-mono font-semibold text-slate-800">CASE FILE GENERATED:</span>
+                      <span className="text-xs font-mono font-semibold text-violet-800 bg-violet-50 px-2 py-0.5 rounded border border-violet-200">
                         {caseFileData.metadata.case_file_id}
                       </span>
                     </div>
-                    <div className="text-[10px] font-mono text-slate-400 mt-0.5">
+                    <div className="text-[10px] font-mono text-slate-500 mt-0.5">
                       Created: {new Date(caseFileData.metadata.created_at).toLocaleString()}
                     </div>
                   </div>
@@ -438,7 +448,7 @@ export const VictimInvestigation: React.FC = () => {
                     <a
                       href={caseFileData.metadata.pdf_download_url}
                       download
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-mono text-xs font-semibold shadow transition"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-violet-700 hover:bg-violet-600 text-white font-mono text-xs font-semibold shadow-sm transition"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>Download PDF</span>
@@ -448,7 +458,7 @@ export const VictimInvestigation: React.FC = () => {
                     <a
                       href={caseFileData.metadata.json_download_url}
                       download
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-white/[0.08] text-slate-200 font-mono text-xs transition"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-mono text-xs transition"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>Evidence JSON</span>
@@ -458,22 +468,22 @@ export const VictimInvestigation: React.FC = () => {
               </div>
 
               {/* Hashes Strip */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono bg-[#06080d]/80 p-3 rounded border border-white/[0.06]">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono bg-slate-50 p-3 rounded border border-slate-200">
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase block">Snapshot SHA-256</span>
-                  <span className="font-mono text-emerald-400 break-all text-[11px]">
+                  <span className="text-[10px] text-slate-500 uppercase block">Snapshot SHA-256</span>
+                  <span className="font-mono text-violet-700 break-all text-[11px] font-semibold">
                     {caseFileData.metadata.evidence_snapshot_sha256}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase block">PDF SHA-256</span>
-                  <span className="font-mono text-cyan-300 break-all text-[11px]">
+                  <span className="text-[10px] text-slate-500 uppercase block">PDF SHA-256</span>
+                  <span className="font-mono text-emerald-700 break-all text-[11px] font-semibold">
                     {caseFileData.metadata.pdf_sha256 || 'N/A'}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase block">Dataset SHA-256</span>
-                  <span className="font-mono text-slate-400 break-all text-[11px]">
+                  <span className="text-[10px] text-slate-500 uppercase block">Dataset SHA-256</span>
+                  <span className="font-mono text-slate-600 break-all text-[11px]">
                     {caseFileData.metadata.dataset_sha256}
                   </span>
                 </div>
@@ -482,16 +492,16 @@ export const VictimInvestigation: React.FC = () => {
           )}
 
           {/* Forensic Workspace Tabs & Dominant Graph Canvas */}
-          <div className="surface-l2 rounded-xl overflow-hidden border border-white/[0.06] shadow-xl">
+          <div className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm">
             {/* Tab Controls */}
-            <div className="flex flex-wrap border-b border-white/[0.06] bg-[#070a12]/80 px-4 pt-2.5 gap-1 text-xs font-mono">
+            <div className="flex flex-wrap border-b border-slate-200 bg-slate-50 px-4 pt-2.5 gap-1 text-xs font-mono">
               <button
                 type="button"
                 onClick={() => setActiveTab('graph')}
                 className={`flex items-center gap-1.5 px-3 py-2 border-b-2 transition ${
                   activeTab === 'graph'
-                    ? 'border-cyan-400 text-cyan-300 font-medium bg-[#0b0f19]/60 rounded-t'
-                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                    ? 'border-violet-600 text-violet-700 font-semibold bg-white rounded-t'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <Network className="w-3.5 h-3.5" />
@@ -503,8 +513,8 @@ export const VictimInvestigation: React.FC = () => {
                 onClick={() => setActiveTab('edges')}
                 className={`flex items-center gap-1.5 px-3 py-2 border-b-2 transition ${
                   activeTab === 'edges'
-                    ? 'border-cyan-400 text-cyan-300 font-medium bg-[#0b0f19]/60 rounded-t'
-                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                    ? 'border-violet-600 text-violet-700 font-semibold bg-white rounded-t'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <GitBranch className="w-3.5 h-3.5" />
@@ -516,8 +526,8 @@ export const VictimInvestigation: React.FC = () => {
                 onClick={() => setActiveTab('terminals')}
                 className={`flex items-center gap-1.5 px-3 py-2 border-b-2 transition ${
                   activeTab === 'terminals'
-                    ? 'border-cyan-400 text-cyan-300 font-medium bg-[#0b0f19]/60 rounded-t'
-                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                    ? 'border-violet-600 text-violet-700 font-semibold bg-white rounded-t'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <Users className="w-3.5 h-3.5" />
@@ -529,8 +539,8 @@ export const VictimInvestigation: React.FC = () => {
                 onClick={() => setActiveTab('transactions')}
                 className={`flex items-center gap-1.5 px-3 py-2 border-b-2 transition ${
                   activeTab === 'transactions'
-                    ? 'border-cyan-400 text-cyan-300 font-medium bg-[#0b0f19]/60 rounded-t'
-                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                    ? 'border-violet-600 text-violet-700 font-semibold bg-white rounded-t'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
@@ -542,8 +552,8 @@ export const VictimInvestigation: React.FC = () => {
                 onClick={() => setActiveTab('risk')}
                 className={`flex items-center gap-1.5 px-3 py-2 border-b-2 transition ${
                   activeTab === 'risk'
-                    ? 'border-cyan-400 text-cyan-300 font-medium bg-[#0b0f19]/60 rounded-t'
-                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                    ? 'border-violet-600 text-violet-700 font-semibold bg-white rounded-t'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <ShieldAlert className="w-3.5 h-3.5" />
@@ -555,25 +565,25 @@ export const VictimInvestigation: React.FC = () => {
               {/* TAB 1: Money-Flow Vector Graph (Dominant Visual Workspace) */}
               {activeTab === 'graph' && (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-500">
                     <div className="flex items-center gap-4">
                       <span className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-violet-600 inline-block" />
                         <span>Root Subject</span>
                       </span>
                       <span className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-purple-400 inline-block" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
                         <span>Distributor Mule</span>
                       </span>
                       <span className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block" />
                         <span>Terminal Sink</span>
                       </span>
                     </div>
                     <span className="hidden sm:inline">Click any node to spotlight path &bull; Use HUD to filter</span>
                   </div>
 
-                  <div className="rounded-lg overflow-hidden border border-white/[0.06]">
+                  <div className="rounded-lg overflow-hidden border border-slate-200">
                     {graphNodes.length > 0 ? (
                       <NetworkGraphViewer
                         nodes={graphNodes}
@@ -582,7 +592,7 @@ export const VictimInvestigation: React.FC = () => {
                         truncated={data.trace.truncated}
                       />
                     ) : (
-                      <div className="flex items-center justify-center h-[500px] text-slate-400 font-mono text-xs">
+                      <div className="flex items-center justify-center h-[500px] text-slate-500 font-mono text-xs">
                         No downstream money-flow attribution detected for this account.
                       </div>
                     )}
@@ -593,14 +603,14 @@ export const VictimInvestigation: React.FC = () => {
               {/* TAB 2: Attribution Edge Evidence */}
               {activeTab === 'edges' && (
                 <div className="space-y-3">
-                  <div className="text-[11px] font-mono text-slate-400 flex items-center justify-between">
+                  <div className="text-[11px] font-mono text-slate-500 flex items-center justify-between">
                     <span>Deterministic FIFO attribution paths linking source funds to downstream outflows</span>
                     <span>Total Links: {data.trace.edges.length}</span>
                   </div>
 
-                  <div className="overflow-x-auto border border-white/[0.06] rounded-lg">
-                    <table className="w-full text-left text-xs font-mono text-slate-300">
-                      <thead className="bg-[#070a12] text-slate-400 border-b border-white/[0.06] text-[10px] uppercase">
+                  <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table className="w-full text-left text-xs font-mono text-slate-700">
+                      <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 text-[10px] uppercase font-semibold">
                         <tr>
                           <th className="py-2.5 px-3">Hop</th>
                           <th className="py-2.5 px-3">Edge Type</th>
@@ -612,16 +622,16 @@ export const VictimInvestigation: React.FC = () => {
                           <th className="py-2.5 px-3">Destination Tx ID</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-white/[0.04]">
+                      <tbody className="divide-y divide-slate-100">
                         {data.trace.edges.map((e) => (
-                          <tr key={e.attribution_id} className="hover:bg-slate-800/30 transition-colors">
-                            <td className="py-2 px-3 text-cyan-400 font-medium">Hop {e.hop_number}</td>
+                          <tr key={e.attribution_id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-2 px-3 text-violet-700 font-medium">Hop {e.hop_number}</td>
                             <td className="py-2 px-3">
                               <span
                                 className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${
                                   e.edge_type === 'ROOT_SEED'
-                                    ? 'bg-cyan-950/40 text-cyan-300 border border-cyan-500/30'
-                                    : 'bg-purple-950/40 text-purple-300 border border-purple-500/30'
+                                    ? 'bg-violet-50 text-violet-700 border border-violet-200'
+                                    : 'bg-slate-100 text-slate-700 border border-slate-200'
                                 }`}
                               >
                                 {e.edge_type === 'ROOT_SEED' ? 'SEED' : 'FIFO'}
@@ -630,7 +640,7 @@ export const VictimInvestigation: React.FC = () => {
                             <td className="py-2 px-3">
                               <Link
                                 to={`/account/${e.source_account}`}
-                                className="text-cyan-300 hover:underline flex items-center gap-1"
+                                className="text-violet-700 hover:underline flex items-center gap-1 font-medium"
                               >
                                 <span>{e.source_account}</span>
                               </Link>
@@ -638,19 +648,19 @@ export const VictimInvestigation: React.FC = () => {
                             <td className="py-2 px-3">
                               <Link
                                 to={`/account/${e.destination_account}`}
-                                className="text-cyan-300 hover:underline flex items-center gap-1"
+                                className="text-violet-700 hover:underline flex items-center gap-1 font-medium"
                               >
                                 <span>{e.destination_account}</span>
                               </Link>
                             </td>
-                            <td className="py-2 px-3 text-right font-medium text-emerald-400 tabular-nums">
+                            <td className="py-2 px-3 text-right font-medium text-emerald-700 tabular-nums">
                               ₹{e.attributed_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </td>
-                            <td className="py-2 px-3 text-right text-slate-400 tabular-nums">
+                            <td className="py-2 px-3 text-right text-slate-500 tabular-nums">
                               {e.delay_seconds !== null ? `${e.delay_seconds}s` : '0s'}
                             </td>
-                            <td className="py-2 px-3 text-slate-400">{e.source_transaction_id}</td>
-                            <td className="py-2 px-3 text-slate-400">{e.destination_transaction_id}</td>
+                            <td className="py-2 px-3 text-slate-500">{e.source_transaction_id}</td>
+                            <td className="py-2 px-3 text-slate-500">{e.destination_transaction_id}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -662,12 +672,12 @@ export const VictimInvestigation: React.FC = () => {
               {/* TAB 3: Terminal Accounts */}
               {activeTab === 'terminals' && (
                 <div className="space-y-4">
-                  <div className="text-[11px] font-mono text-slate-400">
+                  <div className="text-[11px] font-mono text-slate-500">
                     Accounts that received attributed funds but had no forward attribution in this trace (potential cash-out sinks).
                   </div>
 
                   {data.terminals.length === 0 ? (
-                    <div className="text-center py-8 text-slate-400 font-mono text-xs">
+                    <div className="text-center py-8 text-slate-500 font-mono text-xs">
                       No terminal recipient accounts detected.
                     </div>
                   ) : (
@@ -675,36 +685,36 @@ export const VictimInvestigation: React.FC = () => {
                       {data.terminals.map((t) => (
                         <div
                           key={t.account_number}
-                          className="bg-[#06080d]/60 border border-white/[0.06] rounded-lg p-4 space-y-2 hover:border-white/[0.12] transition"
+                          className="bg-white border border-slate-200 rounded-lg p-4 space-y-2 hover:border-slate-300 shadow-sm transition"
                         >
                           <div className="flex items-center justify-between">
                             <Link
                               to={`/account/${t.account_number}`}
-                              className="text-xs font-mono font-semibold text-cyan-300 hover:underline"
+                              className="text-xs font-mono font-semibold text-violet-700 hover:underline"
                             >
                               {t.account_number}
                             </Link>
-                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-900 border border-white/[0.06] text-slate-400">
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600 font-medium">
                               Hop {t.hop}
                             </span>
                           </div>
 
                           <div className="flex items-center justify-between text-xs font-mono">
-                            <span className="text-slate-400 text-[11px]">Attributed Inflow:</span>
-                            <span className="font-semibold text-emerald-400 tabular-nums">
+                            <span className="text-slate-500 text-[11px]">Attributed Inflow:</span>
+                            <span className="font-semibold text-emerald-700 tabular-nums">
                               ₹{t.attributed_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </span>
                           </div>
 
                           <div className="flex items-center justify-between text-xs font-mono">
-                            <span className="text-slate-400 text-[11px]">Role:</span>
-                            <span className="text-purple-300 font-medium">{t.primary_role}</span>
+                            <span className="text-slate-500 text-[11px]">Role:</span>
+                            <span className="text-slate-800 font-medium">{t.primary_role}</span>
                           </div>
 
                           {t.risk_index !== null && (
                             <div className="flex items-center justify-between text-xs font-mono">
-                              <span className="text-slate-400 text-[11px]">Mule Risk:</span>
-                              <span className="text-rose-400 font-semibold">
+                              <span className="text-slate-500 text-[11px]">Mule Risk:</span>
+                              <span className="text-rose-700 font-semibold">
                                 {t.risk_index.toFixed(1)} / 100 ({t.risk_band})
                               </span>
                             </div>
@@ -719,13 +729,13 @@ export const VictimInvestigation: React.FC = () => {
               {/* TAB 4: Subject Transactions */}
               {activeTab === 'transactions' && (
                 <div className="space-y-3">
-                  <div className="text-[11px] font-mono text-slate-400">
+                  <div className="text-[11px] font-mono text-slate-500">
                     Chronological transactions involving subject {data.account_number}.
                   </div>
 
-                  <div className="overflow-x-auto border border-white/[0.06] rounded-lg">
-                    <table className="w-full text-left text-xs font-mono text-slate-300 whitespace-nowrap">
-                      <thead className="bg-[#070a12] text-slate-400 border-b border-white/[0.06] text-[10px] uppercase">
+                  <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table className="w-full text-left text-xs font-mono text-slate-700 whitespace-nowrap">
+                      <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 text-[10px] uppercase font-semibold">
                         <tr>
                           <th className="py-2.5 px-3">Transaction ID</th>
                           <th className="py-2.5 px-3">Direction</th>
@@ -737,29 +747,29 @@ export const VictimInvestigation: React.FC = () => {
                           <th className="py-2.5 px-3">IP Address</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-white/[0.04]">
+                      <tbody className="divide-y divide-slate-100">
                         {data.victim_transactions.map((tx) => (
-                          <tr key={tx.row_id} className="hover:bg-slate-800/30 transition-colors">
-                            <td className="py-2 px-3 font-medium text-slate-200">{tx.transaction_id}</td>
+                          <tr key={tx.row_id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-2 px-3 font-medium text-slate-900">{tx.transaction_id}</td>
                             <td className="py-2 px-3">
                               <span
                                 className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${
                                   tx.direction === 'INCOMING'
-                                    ? 'bg-emerald-950/30 text-emerald-400 border border-emerald-500/30'
-                                    : 'bg-rose-950/30 text-rose-400 border border-rose-500/30'
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                    : 'bg-rose-50 text-rose-700 border border-rose-200'
                                 }`}
                               >
                                 {tx.direction}
                               </span>
                             </td>
-                            <td className="py-2 px-3 text-right font-medium text-slate-100 tabular-nums">
+                            <td className="py-2 px-3 text-right font-medium text-slate-900 tabular-nums">
                               ₹{tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </td>
-                            <td className="py-2 px-3 text-slate-400 tabular-nums">{tx.timestamp.replace('T', ' ')}</td>
-                            <td className="py-2 px-3 text-slate-300">{tx.sender_account}</td>
-                            <td className="py-2 px-3 text-slate-300">{tx.receiver_account}</td>
-                            <td className="py-2 px-3 text-slate-400">{tx.payment_mode}</td>
-                            <td className="py-2 px-3 text-slate-400">{tx.ip_address}</td>
+                            <td className="py-2 px-3 text-slate-500 tabular-nums">{tx.timestamp.replace('T', ' ')}</td>
+                            <td className="py-2 px-3 text-slate-800">{tx.sender_account}</td>
+                            <td className="py-2 px-3 text-slate-800">{tx.receiver_account}</td>
+                            <td className="py-2 px-3 text-slate-600">{tx.payment_mode}</td>
+                            <td className="py-2 px-3 text-slate-600">{tx.ip_address}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -773,21 +783,21 @@ export const VictimInvestigation: React.FC = () => {
                 <div className="space-y-6">
                   {/* Step 5B Risk Family Breakdown */}
                   <div className="space-y-3">
-                    <h3 className="text-xs font-mono font-semibold text-slate-200 uppercase tracking-wider">
+                    <h3 className="text-xs font-mono font-semibold text-slate-900 uppercase tracking-wider">
                       Step 5B Risk Family Contribution ({data.risk.risk_index.toFixed(1)} / 100)
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
                       {Object.entries(data.risk.risk_family_scores || {}).map(([family, score]) => {
                         const numericScore = typeof score === 'number' ? score : Number(score) || 0;
                         return (
-                          <div key={family} className="bg-[#06080d]/60 p-3 rounded-lg border border-white/[0.06] space-y-1.5">
-                            <div className="flex items-center justify-between text-slate-300">
+                          <div key={family} className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1.5">
+                            <div className="flex items-center justify-between text-slate-800">
                               <span className="capitalize">{family.toLowerCase().replace('_', ' ')}</span>
-                              <span className="font-semibold text-cyan-300 tabular-nums">+{numericScore.toFixed(1)} pts</span>
+                              <span className="font-semibold text-violet-700 tabular-nums">+{numericScore.toFixed(1)} pts</span>
                             </div>
-                            <div className="w-full bg-slate-800 rounded-full h-1 overflow-hidden">
+                            <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
                               <div
-                                className="bg-cyan-400 h-1 rounded-full"
+                                className="bg-violet-600 h-1.5 rounded-full"
                                 style={{ width: `${Math.min(100, numericScore * 4)}%` }}
                               />
                             </div>
@@ -798,12 +808,12 @@ export const VictimInvestigation: React.FC = () => {
                   </div>
 
                   {/* Step 5A Velocity Events */}
-                  <div className="space-y-3 pt-4 border-t border-white/[0.06]">
-                    <h3 className="text-xs font-mono font-semibold text-slate-200 uppercase tracking-wider">
+                  <div className="space-y-3 pt-4 border-t border-slate-200">
+                    <h3 className="text-xs font-mono font-semibold text-slate-900 uppercase tracking-wider">
                       Step 5A Rapid Pass-Through Paired Events ({data.velocity.events.length} qualifying)
                     </h3>
                     {data.velocity.events.length === 0 ? (
-                      <div className="text-xs font-mono text-slate-400 py-2">
+                      <div className="text-xs font-mono text-slate-500 py-2">
                         No paired 3-15 minute pass-through events detected for this account.
                       </div>
                     ) : (
@@ -811,15 +821,15 @@ export const VictimInvestigation: React.FC = () => {
                         {data.velocity.events.map((ev, i) => (
                           <div
                             key={i}
-                            className="bg-[#06080d]/60 p-3 rounded-lg border border-white/[0.06] text-xs font-mono flex items-center justify-between"
+                            className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs font-mono flex items-center justify-between"
                           >
                             <div className="space-y-0.5">
-                              <span className="text-slate-200 font-medium">{ev.incoming_tx_id} &rarr; {ev.outgoing_tx_id}</span>
-                              <span className="text-[10px] text-slate-400 block">Transit Time: {ev.delay_str} ({ev.elapsed_seconds}s)</span>
+                              <span className="text-slate-900 font-medium">{ev.incoming_tx_id} &rarr; {ev.outgoing_tx_id}</span>
+                              <span className="text-[10px] text-slate-500 block">Transit Time: {ev.delay_str} ({ev.elapsed_seconds}s)</span>
                             </div>
                             <div className="text-right">
-                              <span className="font-semibold text-purple-300 tabular-nums">₹{ev.attributed_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                              <span className="text-[9px] text-emerald-400 block font-medium">QUALIFYING PASS-THROUGH</span>
+                              <span className="font-semibold text-violet-700 tabular-nums">₹{ev.attributed_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                              <span className="text-[9px] text-emerald-700 block font-semibold">QUALIFYING PASS-THROUGH</span>
                             </div>
                           </div>
                         ))}

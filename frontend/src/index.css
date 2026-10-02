@@ -1,28 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
+/* ============================================================
+   ABHEDYA-CHAKRA — INSTITUTIONAL LIGHT FORENSIC THEME
+   Restrained, professional, evidence-grade UI palette.
+   ============================================================ */
+
 :root {
-  --canvas: #05070a;
-  --surface-0: #05070a;
-  --surface-1: #0a0e14;
-  --surface-2: #0e131a;
-  --surface-3: #121820;
-  --surface-4: #18202b;
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-medium: rgba(255, 255, 255, 0.10);
-  --border-cyan: rgba(0, 217, 255, 0.25);
-  --accent-cyan: #00d9ff;
-  --accent-sky: #38bdf8;
-  --accent-blue: #0284c7;
-  --semantic-rose: #f43f5e;
-  --semantic-amber: #f59e0b;
-  --semantic-emerald: #10b981;
-  --semantic-violet: #8b5cf6;
+  /* Canvas & Surfaces */
+  --canvas:       #f3f4f6;      /* off-white workspace */
+  --surface-0:    #f3f4f6;
+  --surface-1:    #ffffff;      /* panel white */
+  --surface-2:    #f8f9fa;      /* very light grey */
+  --surface-3:    #f1f3f5;
+  --surface-4:    #e9ecef;
+
+  /* Borders */
+  --border-subtle:  rgba(0,0,0,0.07);
+  --border-medium:  rgba(0,0,0,0.12);
+  --border-strong:  rgba(0,0,0,0.18);
+
+  /* Text */
+  --text-primary:   #1a1d23;   /* deep graphite */
+  --text-secondary: #4b5563;   /* muted slate */
+  --text-tertiary:  #9ca3af;   /* light muted */
+  --text-mono:      #374151;   /* monospace/IDs */
+
+  /* Accent — single restrained violet family */
+  --accent:         #6d28d9;   /* violet-700 */
+  --accent-soft:    #7c3aed;   /* violet-600 */
+  --accent-light:   #ede9fe;   /* violet-100 bg */
+  --accent-border:  rgba(109,40,217,0.25);
+
+  /* Semantic */
+  --semantic-rose:    #dc2626;  /* red-600 */
+  --semantic-rose-bg: #fef2f2;
+  --semantic-amber:   #d97706;  /* amber-600 */
+  --semantic-amber-bg:#fffbeb;
+  --semantic-emerald: #059669;  /* emerald-600 */
+  --semantic-emerald-bg:#f0fdf4;
+  --semantic-violet:  #7c3aed;  /* violet-600 */
+  --semantic-violet-bg:#f5f3ff;
 }
 
 @layer base {
   body {
-    background-color: #05070a;
-    color: #f1f5f9;
+    background-color: var(--canvas);
+    color: var(--text-primary);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     margin: 0;
     padding: 0;
@@ -37,78 +61,82 @@
   }
 }
 
-/* Institutional Atmospheric Canvas */
-.atmospheric-canvas {
-  background-color: #05070a;
-  background-image: 
-    radial-gradient(1200px 600px at 50% -10%, rgba(0, 217, 255, 0.04), transparent 80%),
-    radial-gradient(1000px 700px at 100% 100%, rgba(139, 92, 246, 0.025), transparent 75%),
-    radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 40px 40px;
-  background-position: 0 0, 0 0, 0 0;
-  background-attachment: fixed;
-}
-
-/* Technical Forensic Vignette */
-.technical-vignette {
-  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.85);
-}
-
-/* Institutional Surfaces */
+/* ── Institutional Surfaces ────────────────────────────────── */
 .surface-panel {
-  background-color: #0a0e14;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background-color: var(--surface-1);
+  border: 1px solid var(--border-subtle);
 }
 
 .surface-card {
-  background-color: #0e131a;
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background-color: var(--surface-1);
+  border: 1px solid var(--border-subtle);
 }
 
 .surface-elevated {
-  background-color: #121820;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.7);
+  background-color: var(--surface-1);
+  border: 1px solid var(--border-medium);
+  box-shadow: 0 4px 16px -4px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
 }
 
-/* Hairline borders */
-.border-hairline {
-  border-color: rgba(255, 255, 255, 0.06);
+.surface-l1 {
+  background-color: var(--surface-2);
+  border: 1px solid var(--border-subtle);
 }
 
-.border-hairline-t {
-  border-top-color: rgba(255, 255, 255, 0.06);
+.surface-l2 {
+  background-color: var(--surface-1);
+  border: 1px solid var(--border-subtle);
 }
 
-.border-hairline-b {
-  border-bottom-color: rgba(255, 255, 255, 0.06);
+/* ── Border helpers ─────────────────────────────────────────── */
+.border-hairline   { border-color: var(--border-subtle); }
+.border-hairline-t { border-top-color: var(--border-subtle); }
+.border-hairline-b { border-bottom-color: var(--border-subtle); }
+.border-hairline-r { border-right-color: var(--border-subtle); }
+.border-hairline-l { border-left-color: var(--border-subtle); }
+
+/* ── Typography helpers ─────────────────────────────────────── */
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* ── Landing page — separate from inner app ─────────────────── */
+.landing-bg {
+  background: linear-gradient(160deg, #f8f9fa 0%, #ede9fe 100%);
+  min-height: 100vh;
 }
 
-.border-hairline-r {
-  border-right-color: rgba(255, 255, 255, 0.06);
+/* ── Light scrollbars ───────────────────────────────────────── */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: var(--canvas); }
+::-webkit-scrollbar-thumb  { background: #d1d5db; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+/* ── Graph canvas — light background overrides ──────────────── */
+.sigma-container { background: #ffffff !important; }
+
+/* ── Accent button ──────────────────────────────────────────── */
+.btn-primary {
+  background-color: var(--accent);
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  border-radius: 8px;
+  transition: background-color 150ms, box-shadow 150ms;
+}
+.btn-primary:hover {
+  background-color: var(--accent-soft);
+  box-shadow: 0 4px 12px rgba(109,40,217,0.3);
 }
 
-.border-hairline-l {
-  border-left-color: rgba(255, 255, 255, 0.06);
-}
+/* ── Forensic table ─────────────────────────────────────────── */
+.forensic-table thead { background-color: var(--surface-2); }
+.forensic-table th    { color: var(--text-secondary); font-size: 10px; letter-spacing: 0.08em; font-weight: 600; text-transform: uppercase; }
+.forensic-table td    { color: var(--text-primary); border-bottom: 1px solid var(--border-subtle); }
+.forensic-table tr:hover td { background-color: var(--accent-light); }
 
-/* Forensic typography helpers */
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
+/* ── Nav active state ───────────────────────────────────────── */
+.nav-item-active {
+  background-color: var(--accent-light);
+  color: var(--accent);
+  border-color: var(--accent-border);
 }
-
-/* Custom forensic scrollbars */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-::-webkit-scrollbar-track {
-  background: #070a12;
-}
-::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 2px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #334155;
-}
+.nav-item-active .nav-icon { color: var(--accent); }

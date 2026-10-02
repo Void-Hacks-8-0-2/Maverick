@@ -18,25 +18,25 @@ export const RoleBadge: React.FC<RoleBadgeProps> = ({
       label: 'L1 COLLECTOR',
       fullTitle: 'Layer 1: Collector Mule Candidate',
       desc: 'High fan-in credit aggregation from multiple victim/counterparty accounts',
-      style: 'bg-cyan-950/30 border-cyan-500/30 text-cyan-300'
+      style: 'bg-emerald-50 border-emerald-300 text-emerald-700'
     },
     L2: {
       label: 'L2 DISTRIBUTOR',
       fullTitle: 'Layer 2: Distributor Mule Candidate',
       desc: 'Rapid pass-through fan-out dispersion splitting funds to downstream layers',
-      style: 'bg-purple-950/30 border-purple-500/30 text-purple-300'
+      style: 'bg-amber-50 border-amber-300 text-amber-700'
     },
     L3: {
       label: 'L3 TERMINAL',
       fullTitle: 'Layer 3: Terminal / Cash-Out Candidate',
       desc: 'Sink node absorption, egress termination, or lack of forward distribution',
-      style: 'bg-rose-950/30 border-rose-500/30 text-rose-300'
+      style: 'bg-rose-50 border-rose-300 text-rose-700'
     },
     MIXED: {
       label: 'MULTI-ROLE',
       fullTitle: 'Multi-Role Candidate',
       desc: 'Exhibits simultaneous behavioral characteristics across multiple layers',
-      style: 'bg-amber-950/30 border-amber-500/30 text-amber-300'
+      style: 'bg-violet-50 border-violet-300 text-violet-700'
     }
   };
 
@@ -44,7 +44,7 @@ export const RoleBadge: React.FC<RoleBadgeProps> = ({
     label: normalized,
     fullTitle: normalized,
     desc: 'Investigative candidate role classification',
-    style: 'bg-slate-900 border-white/[0.08] text-slate-300'
+    style: 'bg-slate-100 border-slate-300 text-slate-700'
   };
 
   const sizeClasses = {

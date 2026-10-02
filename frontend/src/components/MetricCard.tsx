@@ -13,12 +13,12 @@ interface MetricCardProps {
 }
 
 const variantStyles = {
-  default: 'border-white/[0.06] bg-[#0b0f19]/70',
-  cyan: 'border-cyan-500/20 bg-[#0b0f19]/70',
-  purple: 'border-purple-500/20 bg-[#0b0f19]/70',
-  amber: 'border-amber-500/20 bg-[#0b0f19]/70',
-  emerald: 'border-emerald-500/20 bg-[#0b0f19]/70',
-  rose: 'border-rose-500/20 bg-[#0b0f19]/70',
+  default: 'border-slate-200 bg-white shadow-xs',
+  cyan: 'border-slate-200 bg-white shadow-xs',
+  purple: 'border-violet-200 bg-white shadow-xs',
+  amber: 'border-amber-200 bg-white shadow-xs',
+  emerald: 'border-emerald-200 bg-white shadow-xs',
+  rose: 'border-rose-200 bg-white shadow-xs',
 };
 
 export const MetricCard: React.FC<MetricCardProps> = ({
@@ -26,7 +26,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   value,
   subtitle,
   icon: Icon,
-  iconColor = 'text-cyan-400',
+  iconColor = 'text-violet-600',
   badge,
   variant = 'default',
   onClick
@@ -34,12 +34,12 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`border rounded-lg p-4 sm:p-4.5 flex flex-col justify-between transition-all backdrop-blur-sm ${variantStyles[variant]} ${
-        onClick ? 'cursor-pointer hover:border-cyan-500/40 hover:bg-[#0e1424]/80' : ''
+      className={`border rounded-lg p-4 sm:p-4.5 flex flex-col justify-between transition-all ${variantStyles[variant]} ${
+        onClick ? 'cursor-pointer hover:border-violet-400 hover:shadow-sm' : ''
       }`}
     >
       <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-medium">
+        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-semibold">
           {label}
         </span>
         <div className="flex items-center gap-1.5">
@@ -48,11 +48,11 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         </div>
       </div>
       <div>
-        <div className="text-xl sm:text-2xl font-semibold font-mono text-slate-100 tracking-tight tabular-nums">
+        <div className="text-xl sm:text-2xl font-semibold font-mono text-slate-900 tracking-tight tabular-nums">
           {value}
         </div>
         {subtitle && (
-          <div className="text-[10px] font-mono text-slate-400 mt-1">
+          <div className="text-[10px] font-mono text-slate-500 mt-1">
             {subtitle}
           </div>
         )}

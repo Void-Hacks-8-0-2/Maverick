@@ -136,62 +136,62 @@ export const CaseDiaryView: React.FC = () => {
   const getEventBadgeColor = (type: string) => {
     switch (type) {
       case 'CASE_OPENED':
-        return 'bg-blue-500/10 text-blue-300 border-blue-500/20';
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'ROOT_TRANSACTION':
-        return 'bg-amber-500/10 text-amber-300 border-amber-500/20';
+        return 'bg-amber-50 text-amber-800 border-amber-200';
       case 'ATTRIBUTION_HOP':
-        return 'bg-purple-500/10 text-purple-300 border-purple-500/20';
+        return 'bg-purple-50 text-purple-700 border-purple-200';
       case 'VELOCITY_EVENT':
-        return 'bg-rose-500/10 text-rose-300 border-rose-500/20';
+        return 'bg-rose-50 text-rose-700 border-rose-200';
       case 'RISK_FINDING':
-        return 'bg-orange-500/10 text-orange-300 border-orange-500/20';
+        return 'bg-orange-50 text-orange-800 border-orange-200';
       case 'ROLE_FINDING':
-        return 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20';
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'TERMINAL_ACCOUNT':
-        return 'bg-rose-500/15 text-rose-300 border-rose-500/30';
+        return 'bg-rose-50 text-rose-700 border-rose-200';
       default:
-        return 'bg-white/[0.04] text-slate-300 border-white/[0.06]';
+        return 'bg-slate-50 text-slate-700 border-slate-200';
     }
   };
 
   const getCategoryBadgeColor = (cat: string) => {
     switch (cat) {
       case 'SUBJECT':
-        return 'bg-blue-500/10 text-blue-300 border-blue-500/20';
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'TRANSACTION':
-        return 'bg-amber-500/10 text-amber-300 border-amber-500/20';
+        return 'bg-amber-50 text-amber-800 border-amber-200';
       case 'RISK':
-        return 'bg-orange-500/10 text-orange-300 border-orange-500/20';
+        return 'bg-orange-50 text-orange-800 border-orange-200';
       case 'ROLE':
-        return 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20';
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'VELOCITY':
-        return 'bg-rose-500/10 text-rose-300 border-rose-500/20';
+        return 'bg-rose-50 text-rose-700 border-rose-200';
       case 'ATTRIBUTION':
-        return 'bg-purple-500/10 text-purple-300 border-purple-500/20';
+        return 'bg-purple-50 text-purple-700 border-purple-200';
       case 'PROVENANCE':
-        return 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20';
+        return 'bg-violet-50 text-violet-700 border-violet-200';
       default:
-        return 'bg-white/[0.04] text-slate-300 border-white/[0.06]';
+        return 'bg-slate-50 text-slate-700 border-slate-200';
     }
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-4 py-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-white/[0.06] pb-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-              <BookOpen className="w-4 h-4 text-cyan-400" />
+            <div className="w-8 h-8 rounded bg-violet-50 border border-violet-200 flex items-center justify-center">
+              <BookOpen className="w-4 h-4 text-violet-700" />
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-100 flex items-center gap-3">
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-3">
               Case Diary & Narrative
-              <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-white/[0.04] text-slate-400 border border-white/[0.06]">
+              <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-slate-100 text-slate-600 border border-slate-200">
                 STEP 8
               </span>
             </h1>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-600 mt-1">
             Forensic Case Diary with Atomic Verified Facts, Chronology, and AI-Assisted Narrative Layer
           </p>
         </div>
@@ -201,14 +201,14 @@ export const CaseDiaryView: React.FC = () => {
           {diary && (
             <Link
               to={`/investigate?account=${diary.subject_account}`}
-              className="text-xs flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] text-slate-200 rounded border border-white/[0.08] transition"
+              className="text-xs flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 rounded border border-slate-300 shadow-sm transition"
             >
-              <Activity className="w-3.5 h-3.5 text-cyan-400" />
+              <Activity className="w-3.5 h-3.5 text-violet-700" />
               Blind Victim Workspace
             </Link>
           )}
           {diary?.case_file_id && (
-            <span className="text-xs px-2.5 py-1 bg-emerald-500/10 text-emerald-300 rounded border border-emerald-500/20 font-mono">
+            <span className="text-xs px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded border border-emerald-200 font-mono">
               Linked File: {diary.case_file_id}
             </span>
           )}
@@ -216,9 +216,9 @@ export const CaseDiaryView: React.FC = () => {
       </div>
 
       {/* Persistence Disclaimer Banner */}
-      <div className="p-3 surface-l2 border-hairline rounded-lg flex items-center justify-between text-xs text-amber-300/80">
+      <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg flex items-center justify-between text-xs text-amber-900">
         <div className="flex items-center gap-2">
-          <Info className="w-4 h-4 text-amber-400 flex-shrink-0" />
+          <Info className="w-4 h-4 text-amber-700 flex-shrink-0" />
           <span>
             <strong>Process-Local Storage Notice:</strong> Case-diary metadata, verified facts, and AI narratives are maintained in backend process-local memory and reset upon restart.
           </span>
@@ -229,16 +229,16 @@ export const CaseDiaryView: React.FC = () => {
       </div>
 
       {/* Search & Configuration Bar */}
-      <div className="surface-l2 border-hairline p-4 rounded-xl space-y-3">
+      <div className="bg-white border border-slate-200 shadow-sm p-4 rounded-xl space-y-3">
         <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-500" />
+            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
             <input
               type="text"
               value={inputAccount}
               onChange={(e) => setInputAccount(e.target.value)}
               placeholder="Enter subject account number (e.g. KKBK10000402)"
-              className="w-full pl-10 pr-4 py-2 bg-[#06080d] border border-white/[0.08] rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
+              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-violet-600 font-mono"
             />
           </div>
 
@@ -246,7 +246,7 @@ export const CaseDiaryView: React.FC = () => {
             <select
               value={maxHops}
               onChange={(e) => setMaxHops(Number(e.target.value))}
-              className="bg-[#06080d] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
+              className="bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-violet-600 font-mono"
             >
               <option value={1}>1 Hop</option>
               <option value={2}>2 Hops</option>
@@ -254,12 +254,12 @@ export const CaseDiaryView: React.FC = () => {
               <option value={4}>4 Hops (Default)</option>
             </select>
 
-            <label className="flex items-center gap-1.5 px-3 py-2 bg-[#06080d] border border-white/[0.08] rounded-lg text-xs text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-700 cursor-pointer">
               <input
                 type="checkbox"
                 checked={withNarrative}
                 onChange={(e) => setWithNarrative(e.target.checked)}
-                className="rounded border-white/[0.2] bg-transparent text-cyan-500 focus:ring-0"
+                className="rounded border-slate-300 text-violet-600 focus:ring-0"
               />
               Generate AI Narrative
             </label>
@@ -267,7 +267,7 @@ export const CaseDiaryView: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-slate-950 font-semibold rounded-lg text-xs transition flex items-center gap-2"
+              className="px-4 py-2 bg-violet-700 hover:bg-violet-600 disabled:opacity-50 text-white font-semibold rounded-lg text-xs transition flex items-center gap-2 shadow-sm"
             >
               {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <BookOpen className="w-3.5 h-3.5" />}
               {loading ? 'Building Diary...' : 'Build Case Diary'}
@@ -276,7 +276,7 @@ export const CaseDiaryView: React.FC = () => {
         </form>
 
         {/* Quick Presets */}
-        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
           <span className="font-semibold text-slate-500 text-[11px] uppercase tracking-wider">Presets:</span>
           {PRESET_ACCOUNTS.map((acc) => (
             <button
@@ -288,8 +288,8 @@ export const CaseDiaryView: React.FC = () => {
               }}
               className={`px-2.5 py-0.5 rounded font-mono text-xs transition border ${
                 activeAccount === acc
-                  ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
-                  : 'bg-white/[0.02] text-slate-400 border-white/[0.06] hover:border-white/[0.12] hover:text-slate-200'
+                  ? 'bg-violet-50 text-violet-700 border-violet-300 font-semibold'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
               {acc}
@@ -300,20 +300,20 @@ export const CaseDiaryView: React.FC = () => {
 
       {/* Error state */}
       {error && (
-        <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-200 text-xs flex items-start gap-3">
-          <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-900 text-xs flex items-start gap-3">
+          <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold">Case Diary Generation Failed</p>
-            <p className="text-slate-400 mt-1">{error}</p>
+            <p className="text-rose-700 mt-1">{error}</p>
           </div>
         </div>
       )}
 
       {/* Loading state */}
       {loading && !diary && (
-        <div className="p-12 text-center surface-l2 border-hairline rounded-xl space-y-4">
-          <Loader2 className="w-8 h-8 animate-spin text-cyan-400 mx-auto" />
-          <p className="text-slate-300 font-medium text-sm">Extracting Atomic Verified Facts & Multi-Hop Chronology...</p>
+        <div className="p-12 text-center bg-white border border-slate-200 shadow-sm rounded-xl space-y-4">
+          <Loader2 className="w-8 h-8 animate-spin text-violet-700 mx-auto" />
+          <p className="text-slate-900 font-medium text-sm">Extracting Atomic Verified Facts & Multi-Hop Chronology...</p>
           <p className="text-xs text-slate-500">Running deterministic FIFO attribution and risk profile analysis</p>
         </div>
       )}
@@ -322,66 +322,66 @@ export const CaseDiaryView: React.FC = () => {
       {diary && (
         <div className="space-y-6">
           {/* Identity & Status Card */}
-          <div className="surface-l2 border-hairline p-5 rounded-xl space-y-4">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/[0.06] pb-4">
+          <div className="bg-white border border-slate-200 shadow-sm p-5 rounded-xl space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 pb-4">
               <div>
                 <div className="flex items-center gap-3">
-                  <h2 className="text-base font-bold text-slate-100 font-mono tracking-tight">{diary.case_diary_id}</h2>
+                  <h2 className="text-base font-bold text-slate-900 font-mono tracking-tight">{diary.case_diary_id}</h2>
                   <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-semibold border ${
                     diary.status === 'COMPLETED'
-                      ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
-                      : 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-amber-50 text-amber-800 border-amber-200'
                   }`}>
                     {diary.status}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 mt-1 font-mono">
-                  Subject: <span className="text-cyan-400 font-semibold">{diary.subject_account}</span> |
-                  Investigation ID: <span className="text-slate-300">{diary.investigation_id}</span>
+                <p className="text-xs text-slate-600 mt-1 font-mono">
+                  Subject: <span className="text-violet-700 font-semibold">{diary.subject_account}</span> |
+                  Investigation ID: <span className="text-slate-800 font-mono">{diary.investigation_id}</span>
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
                 {generationTimeMs !== null && (
-                  <div className="bg-[#06080d] px-3 py-1.5 rounded border border-white/[0.06]">
+                  <div className="bg-slate-50 px-3 py-1.5 rounded border border-slate-200">
                     <span className="text-slate-500">Latency:</span>{' '}
-                    <span className="text-emerald-400 font-semibold">{generationTimeMs} ms</span>
+                    <span className="text-emerald-700 font-semibold">{generationTimeMs} ms</span>
                   </div>
                 )}
-                <div className="bg-[#06080d] px-3 py-1.5 rounded border border-white/[0.06]">
+                <div className="bg-slate-50 px-3 py-1.5 rounded border border-slate-200">
                   <span className="text-slate-500">Evidence SHA:</span>{' '}
-                  <span className="text-cyan-400 font-semibold" title={diary.evidence_snapshot_sha256}>
+                  <span className="text-violet-700 font-semibold" title={diary.evidence_snapshot_sha256}>
                     {diary.evidence_snapshot_sha256.substring(0, 16)}...
                   </span>
                 </div>
-                <div className="bg-[#06080d] px-3 py-1.5 rounded border border-white/[0.06]">
+                <div className="bg-slate-50 px-3 py-1.5 rounded border border-slate-200">
                   <span className="text-slate-500">Facts:</span>{' '}
-                  <span className="text-indigo-400 font-semibold">{diary.verified_facts.length}</span>
+                  <span className="text-indigo-700 font-semibold">{diary.verified_facts.length}</span>
                 </div>
-                <div className="bg-[#06080d] px-3 py-1.5 rounded border border-white/[0.06]">
+                <div className="bg-slate-50 px-3 py-1.5 rounded border border-slate-200">
                   <span className="text-slate-500">Events:</span>{' '}
-                  <span className="text-purple-400 font-semibold">{diary.chronology.length}</span>
+                  <span className="text-purple-700 font-semibold">{diary.chronology.length}</span>
                 </div>
               </div>
             </div>
 
             {/* Quick Metrics Bar */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-              <div className="p-3 bg-[#06080d]/60 border border-white/[0.04] rounded-lg">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                 <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider block">Step 5B Mule Risk</span>
                 <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-lg font-bold font-mono text-slate-100">
+                  <span className="text-lg font-bold font-mono text-slate-900">
                     {diary.findings.risk.risk_index.toFixed(1)}
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-rose-500/10 text-rose-300 border border-rose-500/20">
+                  <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-rose-50 text-rose-700 border border-rose-200 font-semibold">
                     {diary.findings.risk.risk_band}
                   </span>
                 </div>
               </div>
 
-              <div className="p-3 bg-[#06080d]/60 border border-white/[0.04] rounded-lg">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                 <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider block">Primary Role</span>
-                <span className="text-xs font-semibold text-emerald-400 block mt-1">
+                <span className="text-xs font-semibold text-emerald-700 block mt-1">
                   {diary.findings.role.primary_role_label}
                 </span>
                 <span className="text-[10px] text-slate-500 font-mono">
@@ -389,10 +389,10 @@ export const CaseDiaryView: React.FC = () => {
                 </span>
               </div>
 
-              <div className="p-3 bg-[#06080d]/60 border border-white/[0.04] rounded-lg">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                 <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider block">Pass-Through Velocity</span>
                 <span className={`text-xs font-semibold block mt-1 ${
-                  diary.findings.velocity.pass_through_candidate ? 'text-amber-400' : 'text-slate-400'
+                  diary.findings.velocity.pass_through_candidate ? 'text-amber-800' : 'text-slate-600'
                 }`}>
                   {diary.findings.velocity.pass_through_candidate ? 'Rapid 3-15m Candidate' : 'Standard Velocity'}
                 </span>
@@ -401,9 +401,9 @@ export const CaseDiaryView: React.FC = () => {
                 </span>
               </div>
 
-              <div className="p-3 bg-[#06080d]/60 border border-white/[0.04] rounded-lg">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                 <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider block">FIFO Root Outflow</span>
-                <span className="text-xs font-bold font-mono text-purple-300 block mt-1">
+                <span className="text-xs font-bold font-mono text-purple-700 block mt-1">
                   ₹{diary.findings.attribution.root_seed_outflow.toLocaleString()}
                 </span>
                 <span className="text-[10px] text-slate-500 font-mono">
@@ -414,28 +414,28 @@ export const CaseDiaryView: React.FC = () => {
           </div>
 
           {/* AI-Assisted Officer Narrative Section */}
-          <div className="surface-l2 border-hairline p-5 rounded-xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
+          <div className="bg-white border border-slate-200 shadow-sm p-5 rounded-xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="p-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-400">
+                <div className="p-1.5 bg-violet-50 border border-violet-200 rounded-lg text-violet-700">
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-100 text-xs font-mono">AI-ASSISTED NARRATIVE</h3>
-                  <div className="text-[10px] font-mono text-indigo-400 font-semibold tracking-wider uppercase">
+                  <h3 className="font-semibold text-slate-900 text-xs font-mono">AI-ASSISTED NARRATIVE</h3>
+                  <div className="text-[10px] font-mono text-violet-700 font-semibold tracking-wider uppercase">
                     GENERATED FROM VERIFIED FACTS
                   </div>
                 </div>
                 {diary.narrative_metadata && (
-                  <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-white/[0.04] text-slate-300 border border-white/[0.06] ml-2">
+                  <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-slate-100 text-slate-700 border border-slate-200 ml-2">
                     Source: {diary.narrative_metadata.narrative_source}
                   </span>
                 )}
                 {diary.narrative_metadata?.validation && (
                   <span className={`text-[10px] px-2 py-0.5 rounded font-mono border ${
                     diary.narrative_metadata.validation.validation_status === 'PASSED'
-                      ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
-                      : 'bg-rose-500/10 text-rose-300 border-rose-500/20'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-rose-50 text-rose-700 border-rose-200'
                   }`}>
                     Validation: {diary.narrative_metadata.validation.validation_status}
                   </span>
@@ -444,12 +444,12 @@ export const CaseDiaryView: React.FC = () => {
 
               {/* Controls */}
               <div className="flex items-center gap-3">
-                <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
+                <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={forceDeterministic}
                     onChange={(e) => setForceDeterministic(e.target.checked)}
-                    className="rounded border-white/[0.2] bg-transparent text-indigo-500 focus:ring-0"
+                    className="rounded border-slate-300 text-violet-600 focus:ring-0"
                   />
                   Force Deterministic Fallback
                 </label>
@@ -458,7 +458,7 @@ export const CaseDiaryView: React.FC = () => {
                   type="button"
                   onClick={handleRegenerateNarrative}
                   disabled={narrativeLoading}
-                  className="px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] disabled:opacity-50 text-slate-200 rounded text-xs font-medium border border-white/[0.08] transition flex items-center gap-1.5"
+                  className="px-3 py-1.5 bg-white hover:bg-slate-50 disabled:opacity-50 text-slate-700 rounded text-xs font-medium border border-slate-300 shadow-sm transition flex items-center gap-1.5"
                 >
                   {narrativeLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                   Regenerate Narrative
@@ -467,8 +467,8 @@ export const CaseDiaryView: React.FC = () => {
             </div>
 
             {/* Mandatory Forensic Disclaimer Box */}
-            <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-xs text-indigo-200/90 flex items-start gap-2.5">
-              <ShieldAlert className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
+            <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg text-xs text-violet-900 flex items-start gap-2.5">
+              <ShieldAlert className="w-4 h-4 text-violet-700 flex-shrink-0 mt-0.5" />
               <div>
                 <strong>FORENSIC SEPARATION OF EVIDENCE:</strong> AI narrative is generated exclusively from the supplied verified facts and chronology events. It serves as an investigative aid and does not constitute judicial evidence, legal proof, or final beneficial ownership determination.
               </div>
@@ -476,17 +476,17 @@ export const CaseDiaryView: React.FC = () => {
 
             {/* Narrative Content */}
             {diary.ai_narrative ? (
-              <div className="text-xs text-slate-300 font-sans leading-relaxed bg-[#06080d]/60 p-5 rounded-lg border border-white/[0.04] space-y-4">
+              <div className="text-xs text-slate-700 font-sans leading-relaxed bg-slate-50 p-5 rounded-lg border border-slate-200 space-y-4">
                 {diary.ai_narrative.split('### ').filter(Boolean).map((section, idx) => {
                   const lines = section.split('\n');
                   const title = lines[0];
                   const body = lines.slice(1).join('\n');
                   return (
                     <div key={idx} className="space-y-1.5">
-                      <h4 className="text-xs font-bold text-indigo-300 font-mono tracking-wide border-b border-white/[0.06] pb-1">
+                      <h4 className="text-xs font-bold text-violet-900 font-mono tracking-wide border-b border-slate-200 pb-1">
                         ### {title}
                       </h4>
-                      <p className="whitespace-pre-line text-slate-300 leading-normal pl-1">
+                      <p className="whitespace-pre-line text-slate-700 leading-normal pl-1">
                         {body.trim()}
                       </p>
                     </div>
@@ -494,12 +494,12 @@ export const CaseDiaryView: React.FC = () => {
                 })}
               </div>
             ) : (
-              <div className="p-8 text-center text-slate-500 bg-[#06080d]/60 rounded-lg border border-white/[0.04]">
+              <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-lg border border-slate-200">
                 <p>No narrative generated for this case diary.</p>
                 <button
                   type="button"
                   onClick={handleRegenerateNarrative}
-                  className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 font-semibold underline"
+                  className="mt-2 text-xs text-violet-700 hover:text-violet-600 font-semibold underline"
                 >
                   Generate Narrative Now
                 </button>
@@ -508,9 +508,9 @@ export const CaseDiaryView: React.FC = () => {
           </div>
 
           {/* Investigator Notes */}
-          <div className="surface-l2 border-hairline p-4 rounded-xl space-y-2">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-300 font-mono uppercase tracking-wider">
-              <Edit3 className="w-3.5 h-3.5 text-slate-400" />
+          <div className="bg-white border border-slate-200 shadow-sm p-4 rounded-xl space-y-2">
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 font-mono uppercase tracking-wider">
+              <Edit3 className="w-3.5 h-3.5 text-slate-500" />
               <span>Officer Case Notes</span>
             </div>
             <textarea
@@ -518,18 +518,18 @@ export const CaseDiaryView: React.FC = () => {
               onChange={(e) => setInvestigatorNotes(e.target.value)}
               placeholder="Record operational observations, court reference numbers, or officer instructions here..."
               rows={2}
-              className="w-full p-2.5 bg-[#06080d] border border-white/[0.08] rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-sans"
+              className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-violet-600 font-sans"
             />
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex border-b border-white/[0.06]">
+          <div className="flex border-b border-slate-200">
             <button
               onClick={() => setActiveTab('chronology')}
               className={`px-4 py-2.5 text-xs font-medium border-b-2 transition flex items-center gap-2 ${
                 activeTab === 'chronology'
-                  ? 'border-cyan-500 text-cyan-400 bg-cyan-500/5'
-                  : 'border-transparent text-slate-400 hover:text-slate-200'
+                  ? 'border-violet-600 text-violet-700 bg-violet-50/50 font-semibold'
+                  : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
             >
               <Clock className="w-3.5 h-3.5" />
@@ -540,8 +540,8 @@ export const CaseDiaryView: React.FC = () => {
               onClick={() => setActiveTab('facts')}
               className={`px-4 py-2.5 text-xs font-medium border-b-2 transition flex items-center gap-2 ${
                 activeTab === 'facts'
-                  ? 'border-cyan-500 text-cyan-400 bg-cyan-500/5'
-                  : 'border-transparent text-slate-400 hover:text-slate-200'
+                  ? 'border-violet-600 text-violet-700 bg-violet-50/50 font-semibold'
+                  : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
             >
               <FileCheck className="w-3.5 h-3.5" />
@@ -552,8 +552,8 @@ export const CaseDiaryView: React.FC = () => {
               onClick={() => setActiveTab('findings')}
               className={`px-4 py-2.5 text-xs font-medium border-b-2 transition flex items-center gap-2 ${
                 activeTab === 'findings'
-                  ? 'border-cyan-500 text-cyan-400 bg-cyan-500/5'
-                  : 'border-transparent text-slate-400 hover:text-slate-200'
+                  ? 'border-violet-600 text-violet-700 bg-violet-50/50 font-semibold'
+                  : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
@@ -564,8 +564,8 @@ export const CaseDiaryView: React.FC = () => {
               onClick={() => setActiveTab('provenance')}
               className={`px-4 py-2.5 text-xs font-medium border-b-2 transition flex items-center gap-2 ${
                 activeTab === 'provenance'
-                  ? 'border-cyan-500 text-cyan-400 bg-cyan-500/5'
-                  : 'border-transparent text-slate-400 hover:text-slate-200'
+                  ? 'border-violet-600 text-violet-700 bg-violet-50/50 font-semibold'
+                  : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
             >
               <Lock className="w-3.5 h-3.5" />
@@ -583,7 +583,7 @@ export const CaseDiaryView: React.FC = () => {
                 <select
                   value={eventFilter}
                   onChange={(e) => setEventFilter(e.target.value)}
-                  className="bg-[#06080d] border border-white/[0.08] rounded px-2.5 py-1 text-xs text-slate-300 font-mono"
+                  className="bg-white border border-slate-300 rounded px-2.5 py-1 text-xs text-slate-700 font-mono focus:outline-none focus:border-violet-600"
                 >
                   <option value="ALL">All Event Types</option>
                   <option value="CASE_OPENED">Case Opened</option>
@@ -600,14 +600,14 @@ export const CaseDiaryView: React.FC = () => {
                 {filteredChronology.map((ev) => (
                   <div
                     key={ev.event_id}
-                    className="p-3 surface-l2 border-hairline rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-2 hover:border-white/[0.12] transition"
+                    className="p-3 bg-white border border-slate-200 shadow-sm rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-2 hover:border-slate-300 transition"
                   >
                     <div className="flex items-start gap-3">
                       <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-semibold border ${getEventBadgeColor(ev.event_type)}`}>
                         {ev.event_type}
                       </span>
                       <div>
-                        <p className="text-xs text-slate-200">{ev.description}</p>
+                        <p className="text-xs text-slate-800">{ev.description}</p>
                         <p className="text-[10px] text-slate-500 font-mono mt-0.5">
                           Source: {ev.source_reference} | Sort Key: {ev.sort_key}
                         </p>
@@ -616,7 +616,7 @@ export const CaseDiaryView: React.FC = () => {
 
                     <div className="flex items-center gap-4 text-xs font-mono self-end md:self-auto">
                       {ev.amount !== null && ev.amount !== undefined && (
-                        <span className="text-purple-300 font-semibold">
+                        <span className="text-purple-700 font-semibold">
                           ₹{ev.amount.toLocaleString()}
                         </span>
                       )}
@@ -640,7 +640,7 @@ export const CaseDiaryView: React.FC = () => {
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="bg-[#06080d] border border-white/[0.08] rounded px-2.5 py-1 text-xs text-slate-300 font-mono"
+                  className="bg-white border border-slate-300 rounded px-2.5 py-1 text-xs text-slate-700 font-mono focus:outline-none focus:border-violet-600"
                 >
                   <option value="ALL">All Categories</option>
                   <option value="SUBJECT">Subject</option>
@@ -653,9 +653,9 @@ export const CaseDiaryView: React.FC = () => {
                 </select>
               </div>
 
-              <div className="overflow-x-auto surface-l2 border-hairline rounded-lg">
+              <div className="overflow-x-auto bg-white border border-slate-200 shadow-sm rounded-lg">
                 <table className="w-full text-left text-xs font-mono">
-                  <thead className="bg-[#06080d]/80 text-slate-400 border-b border-white/[0.06]">
+                  <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold">
                     <tr>
                       <th className="py-2.5 px-3">Fact ID</th>
                       <th className="py-2.5 px-3">Category</th>
@@ -665,21 +665,21 @@ export const CaseDiaryView: React.FC = () => {
                       <th className="py-2.5 px-3">Type</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/[0.04] text-slate-300">
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
                     {filteredFacts.map((fact) => (
-                      <tr key={fact.fact_id} className="hover:bg-white/[0.02]">
-                        <td className="py-2 px-3 text-cyan-400 font-semibold">{fact.fact_id}</td>
+                      <tr key={fact.fact_id} className="hover:bg-slate-50">
+                        <td className="py-2 px-3 text-violet-700 font-semibold">{fact.fact_id}</td>
                         <td className="py-2 px-3">
                           <span className={`text-[10px] px-2 py-0.5 rounded border ${getCategoryBadgeColor(fact.category)}`}>
                             {fact.category}
                           </span>
                         </td>
-                        <td className="py-2 px-3 text-slate-400">{fact.code}</td>
-                        <td className="py-2 px-3 font-sans text-slate-200 max-w-md">{fact.statement}</td>
+                        <td className="py-2 px-3 text-slate-500">{fact.code}</td>
+                        <td className="py-2 px-3 font-sans text-slate-800 max-w-md">{fact.statement}</td>
                         <td className="py-2 px-3 text-slate-500 truncate max-w-xs" title={fact.source_reference}>
                           {fact.source_reference}
                         </td>
-                        <td className="py-2 px-3 text-slate-400">{fact.source_type}</td>
+                        <td className="py-2 px-3 text-slate-600">{fact.source_type}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -692,27 +692,27 @@ export const CaseDiaryView: React.FC = () => {
           {activeTab === 'findings' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Risk Finding */}
-              <div className="surface-l2 border-hairline p-4 rounded-xl space-y-3">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2">
-                  <h4 className="font-semibold text-slate-100 text-xs flex items-center gap-2">
-                    <ShieldAlert className="w-4 h-4 text-orange-400" />
+              <div className="bg-white border border-slate-200 shadow-sm p-4 rounded-xl space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <h4 className="font-semibold text-slate-900 text-xs flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-orange-600" />
                     Step 5B Mule Risk Index
                   </h4>
                   <span className="text-[10px] font-mono text-slate-500">{diary.findings.risk.scoring_version}</span>
                 </div>
                 <div className="flex items-baseline gap-3">
-                  <span className="text-2xl font-bold font-mono text-slate-100">
+                  <span className="text-2xl font-bold font-mono text-slate-900">
                     {diary.findings.risk.risk_index.toFixed(1)}
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-rose-500/10 text-rose-300 border border-rose-500/20">
+                  <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-rose-50 text-rose-700 border border-rose-200 font-semibold">
                     {diary.findings.risk.risk_band}
                   </span>
                 </div>
                 <div className="space-y-1.5 pt-2">
-                  <span className="text-xs text-slate-400 block font-semibold">Family Breakdown:</span>
+                  <span className="text-xs text-slate-500 block font-semibold">Family Breakdown:</span>
                   {Object.entries(diary.findings.risk.family_contributions).map(([fam, pts]) => (
-                    <div key={fam} className="flex justify-between text-xs font-mono text-slate-300">
-                      <span className="text-slate-400">{fam}:</span>
+                    <div key={fam} className="flex justify-between text-xs font-mono text-slate-700">
+                      <span className="text-slate-500">{fam}:</span>
                       <span>{pts.toFixed(1)} pts</span>
                     </div>
                   ))}
@@ -720,25 +720,25 @@ export const CaseDiaryView: React.FC = () => {
               </div>
 
               {/* Role Finding */}
-              <div className="surface-l2 border-hairline p-4 rounded-xl space-y-3">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2">
-                  <h4 className="font-semibold text-slate-100 text-xs flex items-center gap-2">
-                    <Users className="w-4 h-4 text-emerald-400" />
+              <div className="bg-white border border-slate-200 shadow-sm p-4 rounded-xl space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <h4 className="font-semibold text-slate-900 text-xs flex items-center gap-2">
+                    <Users className="w-4 h-4 text-emerald-600" />
                     Step 4 Mule Role Classification
                   </h4>
                   <span className="text-[10px] font-mono text-slate-500">BEHAVIORAL</span>
                 </div>
-                <span className="text-sm font-bold text-emerald-400 block">
+                <span className="text-sm font-bold text-emerald-700 block">
                   {diary.findings.role.primary_role_label}
                 </span>
                 <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono">
-                  <div className={`p-2 rounded border ${diary.findings.role.l1_collector_candidate ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-300' : 'bg-[#06080d] border-white/[0.04] text-slate-600'}`}>
+                  <div className={`p-2 rounded border ${diary.findings.role.l1_collector_candidate ? 'bg-emerald-50 border-emerald-200 text-emerald-700 font-semibold' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
                     L1 Collector: {diary.findings.role.l1_collector_candidate ? 'YES' : 'NO'}
                   </div>
-                  <div className={`p-2 rounded border ${diary.findings.role.l2_distributor_candidate ? 'bg-purple-500/10 border-purple-500/20 text-purple-300' : 'bg-[#06080d] border-white/[0.04] text-slate-600'}`}>
+                  <div className={`p-2 rounded border ${diary.findings.role.l2_distributor_candidate ? 'bg-amber-50 border-amber-200 text-amber-800 font-semibold' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
                     L2 Distributor: {diary.findings.role.l2_distributor_candidate ? 'YES' : 'NO'}
                   </div>
-                  <div className={`p-2 rounded border ${diary.findings.role.l3_terminal_candidate ? 'bg-rose-500/10 border-rose-500/20 text-rose-300' : 'bg-[#06080d] border-white/[0.04] text-slate-600'}`}>
+                  <div className={`p-2 rounded border ${diary.findings.role.l3_terminal_candidate ? 'bg-rose-50 border-rose-200 text-rose-700 font-semibold' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
                     L3 Terminal: {diary.findings.role.l3_terminal_candidate ? 'YES' : 'NO'}
                   </div>
                 </div>
@@ -750,50 +750,50 @@ export const CaseDiaryView: React.FC = () => {
               </div>
 
               {/* Velocity Finding */}
-              <div className="surface-l2 border-hairline p-4 rounded-xl space-y-3">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2">
-                  <h4 className="font-semibold text-slate-100 text-xs flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-amber-400" />
+              <div className="bg-white border border-slate-200 shadow-sm p-4 rounded-xl space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <h4 className="font-semibold text-slate-900 text-xs flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-amber-600" />
                     Step 5A Velocity (3-15 Min Window)
                   </h4>
                   <span className="text-[10px] font-mono text-slate-500">{diary.findings.velocity.classification_version}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs font-mono">
-                  <span className="text-slate-400">Pass-Through Candidate:</span>
-                  <span className={diary.findings.velocity.pass_through_candidate ? 'text-amber-400 font-bold' : 'text-slate-400'}>
+                  <span className="text-slate-500">Pass-Through Candidate:</span>
+                  <span className={diary.findings.velocity.pass_through_candidate ? 'text-amber-800 font-bold' : 'text-slate-600'}>
                     {diary.findings.velocity.pass_through_candidate ? 'TRUE' : 'FALSE'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-xs font-mono">
-                  <span className="text-slate-400">Qualifying Event Count:</span>
-                  <span className="text-slate-200">{diary.findings.velocity.qualifying_event_count}</span>
+                  <span className="text-slate-500">Qualifying Event Count:</span>
+                  <span className="text-slate-800">{diary.findings.velocity.qualifying_event_count}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs font-mono">
-                  <span className="text-slate-400">Attributed Rapid Volume:</span>
-                  <span className="text-purple-300 font-bold">
+                  <span className="text-slate-500">Attributed Rapid Volume:</span>
+                  <span className="text-purple-700 font-bold">
                     ₹{diary.findings.velocity.attributed_volume.toLocaleString()}
                   </span>
                 </div>
               </div>
 
               {/* Attribution Finding */}
-              <div className="surface-l2 border-hairline p-4 rounded-xl space-y-3">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2">
-                  <h4 className="font-semibold text-slate-100 text-xs flex items-center gap-2">
-                    <GitBranch className="w-4 h-4 text-purple-400" />
+              <div className="bg-white border border-slate-200 shadow-sm p-4 rounded-xl space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <h4 className="font-semibold text-slate-900 text-xs flex items-center gap-2">
+                    <GitBranch className="w-4 h-4 text-purple-600" />
                     Step 5C Temporal FIFO Attribution
                   </h4>
                   <span className="text-[10px] font-mono text-slate-500">{diary.findings.attribution.attribution_policy}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs font-mono">
-                  <span className="text-slate-400">Root Seed Outflow:</span>
-                  <span className="text-purple-300 font-bold">
+                  <span className="text-slate-500">Root Seed Outflow:</span>
+                  <span className="text-purple-700 font-bold">
                     ₹{diary.findings.attribution.root_seed_outflow.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-xs font-mono">
-                  <span className="text-slate-400">Downstream Cumulative:</span>
-                  <span className="text-cyan-300 font-bold">
+                  <span className="text-slate-500">Downstream Cumulative:</span>
+                  <span className="text-violet-700 font-bold">
                     ₹{diary.findings.attribution.downstream_cumulative_attribution.toLocaleString()}
                   </span>
                 </div>
@@ -806,34 +806,34 @@ export const CaseDiaryView: React.FC = () => {
 
           {/* TAB 4: Provenance & Seals */}
           {activeTab === 'provenance' && (
-            <div className="surface-l2 border-hairline p-5 rounded-xl space-y-4 text-xs font-mono">
-              <h4 className="font-semibold text-slate-100 font-sans text-xs flex items-center gap-2">
-                <Lock className="w-4 h-4 text-cyan-400" />
+            <div className="bg-white border border-slate-200 shadow-sm p-5 rounded-xl space-y-4 text-xs font-mono">
+              <h4 className="font-semibold text-slate-900 font-sans text-xs flex items-center gap-2">
+                <Lock className="w-4 h-4 text-violet-700" />
                 Data Provenance & Cryptographic Seals
               </h4>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-3 bg-[#06080d] rounded border border-white/[0.06] space-y-2">
-                  <span className="text-slate-400 font-semibold block">Dataset Provenance</span>
-                  <div>Name: <span className="text-slate-200">{diary.data_provenance.dataset_name}</span></div>
-                  <div>Rows: <span className="text-slate-200">{diary.data_provenance.dataset_rows?.toLocaleString()}</span></div>
-                  <div>Dataset SHA-256: <span className="text-emerald-400 break-all">{diary.data_provenance.dataset_sha256}</span></div>
+                <div className="p-3 bg-slate-50 rounded border border-slate-200 space-y-2">
+                  <span className="text-slate-600 font-semibold block">Dataset Provenance</span>
+                  <div>Name: <span className="text-slate-800">{diary.data_provenance.dataset_name}</span></div>
+                  <div>Rows: <span className="text-slate-800">{diary.data_provenance.dataset_rows?.toLocaleString()}</span></div>
+                  <div>Dataset SHA-256: <span className="text-emerald-700 break-all">{diary.data_provenance.dataset_sha256}</span></div>
                 </div>
 
-                <div className="p-3 bg-[#06080d] rounded border border-white/[0.06] space-y-2">
-                  <span className="text-slate-400 font-semibold block">Case Diary Evidence Hash</span>
+                <div className="p-3 bg-slate-50 rounded border border-slate-200 space-y-2">
+                  <span className="text-slate-600 font-semibold block">Case Diary Evidence Hash</span>
                   <div>Evidence Snapshot SHA-256:</div>
-                  <div className="text-cyan-400 break-all font-bold">{diary.evidence_snapshot_sha256}</div>
+                  <div className="text-violet-700 break-all font-bold">{diary.evidence_snapshot_sha256}</div>
                   <p className="text-[10px] text-slate-500 font-sans mt-1">
                     Calculated deterministically over canonical JSON VerifiedFacts.
                   </p>
                 </div>
               </div>
 
-              <div className="p-3 bg-[#06080d] rounded border border-white/[0.06] space-y-1">
-                <span className="text-slate-400 font-semibold block">Analytical Limitations</span>
+              <div className="p-3 bg-slate-50 rounded border border-slate-200 space-y-1">
+                <span className="text-slate-600 font-semibold block">Analytical Limitations</span>
                 {Object.entries(diary.limitations).map(([k, v]) => (
-                  <div key={k} className="text-slate-300">
+                  <div key={k} className="text-slate-700">
                     <span className="text-slate-500">{k}:</span> {String(v)}
                   </div>
                 ))}

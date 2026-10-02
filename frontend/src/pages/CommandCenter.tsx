@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search,
   ArrowRight,
-  TrendingUp,
   Activity,
   Lock,
   Zap,
-  Layers
+  Network,
+  Clock,
+  FileCheck2,
+  Users,
+  TrendingUp,
 } from 'lucide-react';
 import { getDatasetSummary } from '../api/dataset';
 import { searchAccounts, getMuleIntelligence } from '../api/accounts';
@@ -18,13 +21,13 @@ import { ErrorState } from '../components/ErrorState';
 export const CommandCenter: React.FC = () => {
   const navigate = useNavigate();
 
-  const [summary, setSummary] = useState<DatasetSummary | null>(null);
+  const [summary, setSummary]         = useState<DatasetSummary | null>(null);
   const [muleSummary, setMuleSummary] = useState<MuleIntelligenceSummary | null>(null);
   const [loadingMetrics, setLoadingMetrics] = useState(true);
-  const [metricsError, setMetricsError] = useState<string | null>(null);
+  const [metricsError, setMetricsError]     = useState<string | null>(null);
 
   const [subjectAccount, setSubjectAccount] = useState('');
-  const [searchResults, setSearchResults] = useState<AccountSearchItem[]>([]);
+  const [searchResults, setSearchResults]   = useState<AccountSearchItem[]>([]);
 
   useEffect(() => {
     setLoadingMetrics(true);
@@ -44,7 +47,6 @@ export const CommandCenter: React.FC = () => {
         setLoadingMetrics(false);
       });
 
-    // Populate initial notable investigative signals (high volume / active accounts)
     searchAccounts('KKBK', 8)
       .then((res) => setSearchResults(res))
       .catch(() => {});
@@ -57,288 +59,395 @@ export const CommandCenter: React.FC = () => {
     navigate(`/victim/${cleaned}`);
   };
 
-  const handleQuickInvestigate = (accountNumber: string) => {
-    navigate(`/victim/${accountNumber}`);
+  const handleInvestigate = (account: string) => {
+    navigate(`/victim/${account}`);
   };
 
-  const totalMules = muleSummary ? (muleSummary.l1_count + muleSummary.l2_count + muleSummary.l3_count) : 5433;
+  const totalMules = muleSummary
+    ? (muleSummary.l1_count + muleSummary.l2_count + muleSummary.l3_count)
+    : 5433;
   const l1Pct = muleSummary ? Math.round((muleSummary.l1_count / totalMules) * 100) : 19;
   const l2Pct = muleSummary ? Math.round((muleSummary.l2_count / totalMules) * 100) : 55;
   const l3Pct = muleSummary ? Math.round((muleSummary.l3_count / totalMules) * 100) : 26;
 
-  return (
-    <div className="space-y-7">
-      {/* 1. INVESTIGATION INTAKE HERO (Institutional Operations Surface) */}
-      <div className="relative surface-panel rounded-2xl p-6 sm:p-8 overflow-hidden border border-white/[0.08] shadow-2xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/[0.03] rounded-full blur-3xl pointer-events-none" />
+  // Quick-action cards for the investigator
+  const quickActions = [
+    {
+      id: 'victim',
+      label: 'Victim Investigation',
+      description: 'Multi-hop fund trace from any victim account',
+      icon: Activity,
+      path: '/victim',
+      accent: 'var(--accent)',
+      bg: 'var(--accent-light)',
+      border: 'var(--accent-border)',
+    },
+    {
+      id: 'graph',
+      label: 'Network Intelligence',
+      description: 'Visualise transaction graph and mule network',
+      icon: Network,
+      path: '/graph',
+      accent: '#059669',
+      bg: '#f0fdf4',
+      border: 'rgba(5,150,105,0.2)',
+    },
+    {
+      id: 'mules',
+      label: 'Mule Intelligence',
+      description: 'Browse classified L1/L2/L3 mule candidates',
+      icon: Users,
+      path: '/mules',
+      accent: '#d97706',
+      bg: '#fffbeb',
+      border: 'rgba(217,119,6,0.2)',
+    },
+    {
+      id: 'timeline',
+      label: 'Forensic Timeline',
+      description: 'Chronological transaction event analysis',
+      icon: Clock,
+      path: '/timeline',
+      accent: '#dc2626',
+      bg: '#fef2f2',
+      border: 'rgba(220,38,38,0.2)',
+    },
+    {
+      id: 'case-file',
+      label: 'Case File & Evidence',
+      description: 'Packaged forensic evidence and legal freeze',
+      icon: FileCheck2,
+      path: '/case-file',
+      accent: '#4b5563',
+      bg: '#f8f9fa',
+      border: 'rgba(0,0,0,0.1)',
+    },
+  ];
 
-        <div className="max-w-4xl mx-auto space-y-5">
-          <div className="space-y-1.5">
-            <div className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-              <span>ABHEDYA CHAKRA</span>
-              <span className="text-slate-600">&bull;</span>
-              <span className="text-slate-400">INVESTIGATION CONSOLE</span>
+  return (
+    <div className="space-y-8">
+      {/* ── 1. INVESTIGATION INTAKE ──────────────────────────────── */}
+      <div
+        className="rounded-xl p-6 sm:p-8"
+        style={{ backgroundColor: '#ffffff', border: '1px solid var(--border-subtle)', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}
+      >
+        <div className="max-w-3xl space-y-4">
+          <div>
+            <div className="text-[10px] font-mono font-semibold tracking-[0.2em] uppercase mb-2" style={{ color: 'var(--accent)' }}>
+              Investigation Console
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-slate-100 tracking-tight font-sans">
-              START AN INVESTIGATION
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+              Start an Investigation
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-2xl font-sans">
-              Enter any account number to initiate multi-hop fund attribution, rapid velocity detection,
-              and deterministic mule role classification across the production dataset.
+            <p className="text-sm mt-1.5 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              Enter any account number to initiate multi-hop fund attribution, velocity detection,
+              and deterministic mule role classification.
             </p>
           </div>
 
-          {/* Primary Intake Form */}
+          {/* Primary form */}
           <form onSubmit={handleInitiateTrace} className="space-y-3 pt-1">
             <div className="flex flex-col sm:flex-row gap-2.5">
               <div className="relative flex-1">
-                <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3.5 top-3.5 w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
                 <input
+                  id="investigation-input"
                   type="text"
                   value={subjectAccount}
                   onChange={(e) => setSubjectAccount(e.target.value)}
                   placeholder="Enter victim or account number (e.g. KKBK10000402)..."
-                  className="w-full bg-[#05070a] border border-white/[0.12] focus:border-cyan-400/80 rounded-xl pl-10 pr-4 py-3 text-xs sm:text-sm font-mono text-slate-100 placeholder-slate-500 focus:outline-none transition shadow-inner"
+                  className="w-full rounded-lg pl-10 pr-4 py-3 text-xs sm:text-sm font-mono focus:outline-none transition"
+                  style={{
+                    backgroundColor: 'var(--surface-2)',
+                    border: '1px solid var(--border-medium)',
+                    color: 'var(--text-primary)',
+                  }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+                  onBlur={(e)  => { e.currentTarget.style.borderColor = 'var(--border-medium)'; }}
                 />
               </div>
               <button
                 type="submit"
-                className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-6 py-3 rounded-xl text-xs font-semibold font-mono tracking-wider flex items-center justify-center gap-2 transition shrink-0 shadow-lg shadow-cyan-500/20 active:scale-[0.99]"
+                id="investigate-btn"
+                className="px-6 py-3 rounded-lg text-xs font-semibold font-mono tracking-wider flex items-center justify-center gap-2 transition shrink-0 text-white"
+                style={{ backgroundColor: 'var(--accent)', boxShadow: '0 2px 8px rgba(109,40,217,0.25)' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--accent-soft)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--accent)'; }}
               >
                 <span>INVESTIGATE</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
-
-            {/* Benchmark Quick-Launch Pills */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs font-mono">
-              <span className="text-[11px] text-slate-400">Priority Test Cases:</span>
-              {[
-                { id: 'KKBK10000402', label: 'Victim Benchmark (27 Nodes)' },
-                { id: 'BARB10000427', label: 'Large Distributor (425 Nodes)' },
-                { id: 'PYTM10001005', label: 'L2 Intermediary' },
-                { id: 'AIRP10000595', label: 'L1 Collector' },
-              ].map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => handleQuickInvestigate(c.id)}
-                  className="bg-[#0a0e14] hover:bg-slate-800 border border-white/[0.08] hover:border-cyan-500/40 px-2.5 py-1 rounded-lg text-[11px] text-cyan-300 transition flex items-center gap-1.5"
-                >
-                  <span className="font-semibold">{c.id}</span>
-                  <span className="text-slate-400 text-[10px]">({c.label})</span>
-                </button>
-              ))}
-            </div>
           </form>
         </div>
       </div>
 
-      {/* 2. INTEGRATED DATASET TELEMETRY STRIP */}
-      <div className="surface-l1 border border-white/[0.06] rounded-lg px-4 py-2.5 flex flex-wrap items-center justify-between gap-y-2 gap-x-6 text-[11px] font-mono text-slate-400">
-        <div className="flex items-center gap-2 text-slate-300">
-          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-          <span className="text-slate-400">DATASET:</span>
-          <span className="font-semibold text-slate-200">2,000,000 TX</span>
+      {/* ── 2. QUICK ACTION GRID ─────────────────────────────────── */}
+      <div>
+        <div className="text-[10px] font-mono font-semibold tracking-[0.15em] uppercase mb-3" style={{ color: 'var(--text-tertiary)' }}>
+          Investigative Modules
         </div>
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-          <span className="text-slate-400">ENTITIES:</span>
-          <span className="font-semibold text-slate-200">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <button
+                key={action.id}
+                type="button"
+                onClick={() => navigate(action.path)}
+                id={`quick-action-${action.id}`}
+                className="text-left p-4 rounded-lg transition group"
+                style={{
+                  backgroundColor: action.bg,
+                  border: `1px solid ${action.border}`,
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 4px 12px ${action.border}`;
+                  (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
+                  (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+                }}
+              >
+                <Icon className="w-5 h-5 mb-2.5" style={{ color: action.accent }} />
+                <div className="text-xs font-semibold mb-1" style={{ color: action.accent }}>
+                  {action.label}
+                </div>
+                <div className="text-[10px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                  {action.description}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── 3. DATASET TELEMETRY STRIP ──────────────────────────── */}
+      <div
+        className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2.5 rounded-lg text-[11px] font-mono"
+        style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-subtle)' }}
+      >
+        <div className="flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+          <span className="w-1.5 h-1.5 rounded-full bg-violet-600" />
+          <span>DATASET:</span>
+          <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>2,000,000 TX</span>
+        </div>
+        <div className="flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+          <span>ENTITIES:</span>
+          <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
             {summary ? summary.unique_accounts.toLocaleString() : '24,873'} ACCOUNTS
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-          <span className="text-slate-400">WINDOW:</span>
-          <span className="font-semibold text-slate-200">15 CALENDAR DAYS</span>
+        <div className="flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+          <span>WINDOW:</span>
+          <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>15 CALENDAR DAYS</span>
         </div>
         <div className="flex items-center gap-2">
-          <Lock className="w-3 h-3 text-emerald-400" />
-          <span className="text-slate-400">INTEGRITY:</span>
-          <span className="font-semibold text-emerald-400">SHA-256 VERIFIED</span>
-          <span className="text-slate-400 text-[10px] hidden sm:inline">(2c9f81fd...)</span>
+          <Lock className="w-3 h-3" style={{ color: 'var(--semantic-emerald)' }} />
+          <span style={{ color: 'var(--text-secondary)' }}>INTEGRITY:</span>
+          <span className="font-semibold" style={{ color: 'var(--semantic-emerald)' }}>SHA-256 VERIFIED</span>
+          <span className="hidden sm:inline" style={{ color: 'var(--text-tertiary)' }}>(2c9f81fd...)</span>
         </div>
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-3 h-3 text-slate-400" />
-          <span className="text-slate-400">GROSS:</span>
-          <span className="font-semibold text-slate-200">
+        <div className="flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+          <TrendingUp className="w-3 h-3" />
+          <span>GROSS:</span>
+          <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
             ₹{summary ? summary.total_amount.toLocaleString(undefined, { maximumFractionDigits: 0 }) : '...'}
           </span>
         </div>
       </div>
 
-      {/* 3. COHESIVE INVESTIGATIVE SIGNALS (Unified Intelligence Region) */}
+      {/* ── 4. MULE NETWORK INTELLIGENCE ────────────────────────── */}
       {loadingMetrics ? (
         <LoadingState
-          message="Loading Platform Forensics..."
-          submessage="Aggregating dataset summary and mule intelligence metrics from DuckDB"
-          heightClass="h-28"
+          message="Loading Forensic Intelligence..."
+          submessage="Aggregating mule candidate metrics from DuckDB"
+          heightClass="h-24"
         />
       ) : metricsError ? (
         <ErrorState error={metricsError} />
       ) : (
-        <div className="surface-l2 rounded-xl p-5 border border-white/[0.06] space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.06] pb-3">
+        <div
+          className="rounded-xl p-5 space-y-4"
+          style={{ backgroundColor: '#ffffff', border: '1px solid var(--border-subtle)' }}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
             <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-cyan-400" />
-              <h2 className="text-xs font-mono font-semibold tracking-wider text-slate-200 uppercase">
-                MULE NETWORK INTELLIGENCE SIGNALS
+              <Activity className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+              <h2 className="text-xs font-mono font-semibold tracking-wider uppercase" style={{ color: 'var(--text-primary)' }}>
+                Mule Network Intelligence
               </h2>
             </div>
-            <div className="text-[11px] font-mono text-slate-400">
-              Total Classified Candidates: <span className="text-cyan-300 font-semibold">{totalMules.toLocaleString()}</span>
+            <div className="text-[11px] font-mono" style={{ color: 'var(--text-secondary)' }}>
+              Total Classified: <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{totalMules.toLocaleString()}</span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* L1 Collector */}
-            <div className="bg-[#06080d]/60 border border-white/[0.06] p-3.5 rounded-lg space-y-2">
+            <div className="p-3.5 rounded-lg space-y-2" style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-subtle)' }}>
               <div className="flex items-center justify-between text-[11px] font-mono">
-                <span className="text-cyan-400 font-medium">L1 COLLECTOR</span>
-                <span className="text-slate-400">{l1Pct}%</span>
+                <span className="font-semibold" style={{ color: '#059669' }}>L1 COLLECTOR</span>
+                <span style={{ color: 'var(--text-tertiary)' }}>{l1Pct}%</span>
               </div>
-              <div className="text-xl font-mono font-semibold text-slate-100 tabular-nums">
-                {muleSummary?.l1_count.toLocaleString() || '1,032'}
+              <div className="text-xl font-mono font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+                {muleSummary?.l1_count.toLocaleString() ?? '1,032'}
               </div>
-              <div className="w-full bg-slate-800/80 h-1 rounded-full overflow-hidden">
-                <div className="bg-cyan-400 h-full rounded-full" style={{ width: `${l1Pct}%` }} />
+              <div className="w-full h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--surface-4)' }}>
+                <div className="h-full rounded-full" style={{ width: `${l1Pct}%`, backgroundColor: '#059669' }} />
               </div>
-              <div className="text-[10px] text-slate-400 font-mono">High fan-in credit aggregation</div>
+              <div className="text-[10px] font-mono" style={{ color: 'var(--text-tertiary)' }}>High fan-in credit aggregation</div>
             </div>
 
             {/* L2 Distributor */}
-            <div className="bg-[#06080d]/60 border border-white/[0.06] p-3.5 rounded-lg space-y-2">
+            <div className="p-3.5 rounded-lg space-y-2" style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-subtle)' }}>
               <div className="flex items-center justify-between text-[11px] font-mono">
-                <span className="text-purple-400 font-medium">L2 DISTRIBUTOR</span>
-                <span className="text-slate-400">{l2Pct}%</span>
+                <span className="font-semibold" style={{ color: 'var(--accent)' }}>L2 DISTRIBUTOR</span>
+                <span style={{ color: 'var(--text-tertiary)' }}>{l2Pct}%</span>
               </div>
-              <div className="text-xl font-mono font-semibold text-slate-100 tabular-nums">
-                {muleSummary?.l2_count.toLocaleString() || '2,988'}
+              <div className="text-xl font-mono font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+                {muleSummary?.l2_count.toLocaleString() ?? '2,988'}
               </div>
-              <div className="w-full bg-slate-800/80 h-1 rounded-full overflow-hidden">
-                <div className="bg-purple-400 h-full rounded-full" style={{ width: `${l2Pct}%` }} />
+              <div className="w-full h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--surface-4)' }}>
+                <div className="h-full rounded-full" style={{ width: `${l2Pct}%`, backgroundColor: 'var(--accent)' }} />
               </div>
-              <div className="text-[10px] text-slate-400 font-mono">Rapid pass-through dispersion</div>
+              <div className="text-[10px] font-mono" style={{ color: 'var(--text-tertiary)' }}>Rapid pass-through dispersion</div>
             </div>
 
             {/* L3 Terminal */}
-            <div className="bg-[#06080d]/60 border border-white/[0.06] p-3.5 rounded-lg space-y-2">
+            <div className="p-3.5 rounded-lg space-y-2" style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-subtle)' }}>
               <div className="flex items-center justify-between text-[11px] font-mono">
-                <span className="text-rose-400 font-medium">L3 TERMINAL</span>
-                <span className="text-slate-400">{l3Pct}%</span>
+                <span className="font-semibold" style={{ color: 'var(--semantic-rose)' }}>L3 TERMINAL</span>
+                <span style={{ color: 'var(--text-tertiary)' }}>{l3Pct}%</span>
               </div>
-              <div className="text-xl font-mono font-semibold text-slate-100 tabular-nums">
-                {muleSummary?.l3_count.toLocaleString() || '1,413'}
+              <div className="text-xl font-mono font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+                {muleSummary?.l3_count.toLocaleString() ?? '1,413'}
               </div>
-              <div className="w-full bg-slate-800/80 h-1 rounded-full overflow-hidden">
-                <div className="bg-rose-400 h-full rounded-full" style={{ width: `${l3Pct}%` }} />
+              <div className="w-full h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--surface-4)' }}>
+                <div className="h-full rounded-full" style={{ width: `${l3Pct}%`, backgroundColor: 'var(--semantic-rose)' }} />
               </div>
-              <div className="text-[10px] text-slate-400 font-mono">Sink absorption &amp; cash-out</div>
+              <div className="text-[10px] font-mono" style={{ color: 'var(--text-tertiary)' }}>Sink absorption &amp; cash-out</div>
             </div>
 
-            {/* Rapid Velocity & High Risk */}
-            <div className="bg-[#06080d]/60 border border-white/[0.06] p-3.5 rounded-lg space-y-2">
+            {/* Rapid Velocity */}
+            <div className="p-3.5 rounded-lg space-y-2" style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-subtle)' }}>
               <div className="flex items-center justify-between text-[11px] font-mono">
-                <span className="text-amber-400 font-medium">RAPID VELOCITY</span>
-                <Zap className="w-3 h-3 text-amber-400" />
+                <span className="font-semibold" style={{ color: 'var(--semantic-amber)' }}>RAPID VELOCITY</span>
+                <Zap className="w-3 h-3" style={{ color: 'var(--semantic-amber)' }} />
               </div>
-              <div className="text-xl font-mono font-semibold text-slate-100 tabular-nums">
-                {muleSummary?.velocity_count.toLocaleString() || '171'}
+              <div className="text-xl font-mono font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+                {muleSummary?.velocity_count.toLocaleString() ?? '171'}
               </div>
-              <div className="flex items-center justify-between text-[10px] font-mono pt-1 border-t border-white/[0.06]">
-                <span className="text-slate-400">High-Risk (Score ≥70):</span>
-                <span className="text-rose-400 font-semibold">{muleSummary?.high_risk_count.toLocaleString() || '30'}</span>
+              <div className="flex items-center justify-between text-[10px] font-mono pt-1" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>High-Risk (Score ≥70):</span>
+                <span className="font-semibold" style={{ color: 'var(--semantic-rose)' }}>
+                  {muleSummary?.high_risk_count.toLocaleString() ?? '30'}
+                </span>
               </div>
-              <div className="text-[10px] text-slate-400 font-mono">3–15 minute turnaround window</div>
+              <div className="text-[10px] font-mono" style={{ color: 'var(--text-tertiary)' }}>3–15 min turnaround window</div>
             </div>
           </div>
         </div>
       )}
 
-      {/* 4. NOTABLE INVESTIGATIVE SIGNALS (Refined Financial Ledger) */}
+      {/* ── 5. NOTABLE INVESTIGATIVE SIGNALS ───────────────────── */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-cyan-400" />
-            <h3 className="text-xs font-mono font-semibold tracking-wider text-slate-300 uppercase">
-              NOTABLE INVESTIGATIVE SIGNALS ({searchResults.length} Accounts Displayed)
-            </h3>
-          </div>
-          <span className="text-[10px] font-mono text-slate-400">
-            Click &quot;Investigate&quot; to open the Blind Victim Trace workflow
+          <h3 className="text-xs font-mono font-semibold tracking-wider uppercase" style={{ color: 'var(--text-secondary)' }}>
+            Notable Investigative Signals ({searchResults.length} accounts)
+          </h3>
+          <span className="text-[10px] font-mono" style={{ color: 'var(--text-tertiary)' }}>
+            Click &ldquo;Investigate&rdquo; to open the Blind Victim Trace
           </span>
         </div>
 
-        <div className="surface-l2 rounded-xl overflow-hidden border border-white/[0.06] shadow-lg">
+        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-subtle)', backgroundColor: '#ffffff' }}>
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-[#070a12]/90 text-slate-400 border-b border-white/[0.06] text-[10px] uppercase tracking-wider sticky top-0">
-                <tr>
-                  <th className="py-2.5 px-4 font-medium">Account ID</th>
-                  <th className="py-2.5 px-4 font-medium">Inbound Tx</th>
-                  <th className="py-2.5 px-4 font-medium">Outbound Tx</th>
-                  <th className="py-2.5 px-4 font-medium">Observed Inflow</th>
-                  <th className="py-2.5 px-4 font-medium">Observed Outflow</th>
-                  <th className="py-2.5 px-4 font-medium">Net Flow Delta</th>
-                  <th className="py-2.5 px-4 font-medium text-right">Actions</th>
+            <table className="w-full text-left text-xs font-mono forensic-table">
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                  <th className="py-2.5 px-4">Account ID</th>
+                  <th className="py-2.5 px-4">Inbound Tx</th>
+                  <th className="py-2.5 px-4">Outbound Tx</th>
+                  <th className="py-2.5 px-4">Observed Inflow</th>
+                  <th className="py-2.5 px-4">Observed Outflow</th>
+                  <th className="py-2.5 px-4">Net Delta</th>
+                  <th className="py-2.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.04] text-slate-300">
+              <tbody>
                 {searchResults.map((item) => (
-                  <tr key={item.account} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="py-2.5 px-4 font-medium text-slate-100 flex items-center space-x-2">
+                  <tr key={item.account}>
+                    <td className="py-2.5 px-4 font-medium">
                       <button
                         type="button"
-                        onClick={() => handleQuickInvestigate(item.account)}
-                        className="hover:text-cyan-300 text-cyan-400 font-mono transition"
+                        onClick={() => handleInvestigate(item.account)}
+                        className="font-mono transition"
+                        style={{ color: 'var(--accent)' }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.textDecoration = 'underline'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.textDecoration = 'none'; }}
                       >
                         {item.account}
                       </button>
                     </td>
-                    <td className="py-2.5 px-4 text-slate-300 tabular-nums">
+                    <td className="py-2.5 px-4 tabular-nums" style={{ color: 'var(--text-secondary)' }}>
                       {item.inbound_transaction_count}
                     </td>
-                    <td className="py-2.5 px-4 text-slate-300 tabular-nums">
+                    <td className="py-2.5 px-4 tabular-nums" style={{ color: 'var(--text-secondary)' }}>
                       {item.outbound_transaction_count}
                     </td>
-                    <td className="py-2.5 px-4 text-emerald-400 font-medium tabular-nums">
+                    <td className="py-2.5 px-4 font-medium tabular-nums" style={{ color: 'var(--semantic-emerald)' }}>
                       ₹{item.observed_inflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="py-2.5 px-4 text-rose-400 font-medium tabular-nums">
+                    <td className="py-2.5 px-4 font-medium tabular-nums" style={{ color: 'var(--semantic-rose)' }}>
                       ₹{item.observed_outflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </td>
-                    <td className={`py-2.5 px-4 font-medium tabular-nums ${item.dataset_observed_net_movement >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <td
+                      className="py-2.5 px-4 font-medium tabular-nums"
+                      style={{ color: item.dataset_observed_net_movement >= 0 ? 'var(--semantic-emerald)' : 'var(--semantic-rose)' }}
+                    >
                       {item.dataset_observed_net_movement >= 0 ? '+' : ''}
                       ₹{item.dataset_observed_net_movement.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </td>
                     <td className="py-2.5 px-4 text-right space-x-1.5 whitespace-nowrap">
                       <button
                         type="button"
-                        onClick={() => handleQuickInvestigate(item.account)}
-                        className="bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 px-2 py-0.5 rounded text-[11px] font-medium transition"
+                        onClick={() => handleInvestigate(item.account)}
+                        className="px-2.5 py-1 rounded text-[11px] font-semibold transition text-white"
+                        style={{ backgroundColor: 'var(--accent)' }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--accent-soft)'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--accent)'; }}
                       >
                         Investigate
                       </button>
                       <button
                         type="button"
                         onClick={() => navigate(`/graph?account=${item.account}`)}
-                        className="bg-[#06080d]/80 hover:bg-slate-800 border border-white/[0.06] text-slate-300 px-2 py-0.5 rounded text-[11px] transition"
+                        className="px-2.5 py-1 rounded text-[11px] transition"
+                        style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-medium)', color: 'var(--text-secondary)' }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--surface-3)'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--surface-2)'; }}
                       >
                         Graph
                       </button>
                       <button
                         type="button"
                         onClick={() => navigate(`/timeline?account_id=${item.account}`)}
-                        className="bg-[#06080d]/80 hover:bg-slate-800 border border-white/[0.06] text-slate-300 px-2 py-0.5 rounded text-[11px] transition"
+                        className="px-2.5 py-1 rounded text-[11px] transition"
+                        style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-medium)', color: 'var(--text-secondary)' }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--surface-3)'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--surface-2)'; }}
                       >
                         Timeline
                       </button>
                       <button
                         type="button"
                         onClick={() => navigate(`/account/${item.account}`)}
-                        className="bg-[#06080d]/80 hover:bg-slate-800 border border-white/[0.06] text-slate-300 px-2 py-0.5 rounded text-[11px] transition"
+                        className="px-2.5 py-1 rounded text-[11px] transition"
+                        style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-medium)', color: 'var(--text-secondary)' }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--surface-3)'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--surface-2)'; }}
                       >
                         Profile
                       </button>

@@ -13,10 +13,10 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   heightClass = 'h-48'
 }) => {
   return (
-    <div className={`w-full flex flex-col items-center justify-center surface-l2 border-hairline rounded-xl p-6 ${heightClass}`}>
-      <div className="flex items-center space-x-3 text-cyan-400">
-        <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-        <span className="text-xs font-mono font-medium text-slate-200 tracking-tight">
+    <div className={`w-full flex flex-col items-center justify-center bg-white border border-slate-200 rounded-xl p-6 shadow-sm ${heightClass}`}>
+      <div className="flex items-center space-x-3 text-violet-600">
+        <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
+        <span className="text-xs font-mono font-medium text-slate-800 tracking-tight">
           {message}
         </span>
       </div>

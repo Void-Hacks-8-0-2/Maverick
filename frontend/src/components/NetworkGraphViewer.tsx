@@ -70,34 +70,34 @@ export const NetworkGraphViewer: React.FC<NetworkGraphViewerProps> = ({
 
   // Dynamic layer structural guides for header
   const layerHeaders = useMemo(() => {
-    if (maxHopObserved <= 0) return [{ label: 'SUBJECT', color: 'text-cyan-400 font-semibold' }];
+    if (maxHopObserved <= 0) return [{ label: 'SUBJECT', color: 'text-violet-700 font-semibold' }];
     if (maxHopObserved === 1) {
       return [
-        { label: 'SUBJECT', color: 'text-cyan-400 font-semibold' },
-        { label: 'HOP 1 (RECIPIENTS)', color: 'text-slate-300' },
+        { label: 'SUBJECT', color: 'text-violet-700 font-semibold' },
+        { label: 'HOP 1 (RECIPIENTS)', color: 'text-slate-700 font-medium' },
       ];
     }
     if (maxHopObserved === 2) {
       return [
-        { label: 'SUBJECT', color: 'text-cyan-400 font-semibold' },
-        { label: 'HOP 1 (INTERMEDIARIES)', color: 'text-purple-300' },
-        { label: 'HOP 2 / TERMINALS', color: 'text-rose-400 font-semibold' },
+        { label: 'SUBJECT', color: 'text-violet-700 font-semibold' },
+        { label: 'HOP 1 (INTERMEDIARIES)', color: 'text-emerald-700 font-medium' },
+        { label: 'HOP 2 / TERMINALS', color: 'text-rose-600 font-semibold' },
       ];
     }
     if (maxHopObserved === 3) {
       return [
-        { label: 'SUBJECT', color: 'text-cyan-400 font-semibold' },
-        { label: 'HOP 1', color: 'text-purple-300' },
-        { label: 'HOP 2', color: 'text-slate-300' },
-        { label: 'TERMINALS', color: 'text-rose-400 font-semibold' },
+        { label: 'SUBJECT', color: 'text-violet-700 font-semibold' },
+        { label: 'HOP 1', color: 'text-emerald-700 font-medium' },
+        { label: 'HOP 2', color: 'text-amber-700 font-medium' },
+        { label: 'TERMINALS', color: 'text-rose-600 font-semibold' },
       ];
     }
     return [
-      { label: 'SUBJECT', color: 'text-cyan-400 font-semibold' },
-      { label: 'HOP 1', color: 'text-purple-300' },
-      { label: 'HOP 2', color: 'text-slate-300' },
-      { label: 'HOP 3', color: 'text-slate-300' },
-      { label: 'TERMINALS', color: 'text-rose-400 font-semibold' },
+      { label: 'SUBJECT', color: 'text-violet-700 font-semibold' },
+      { label: 'HOP 1', color: 'text-emerald-700 font-medium' },
+      { label: 'HOP 2', color: 'text-amber-700 font-medium' },
+      { label: 'HOP 3', color: 'text-slate-700 font-medium' },
+      { label: 'TERMINALS', color: 'text-rose-600 font-semibold' },
     ];
   }, [maxHopObserved]);
 
@@ -235,18 +235,20 @@ export const NetworkGraphViewer: React.FC<NetworkGraphViewerProps> = ({
     // Add aggregate cluster glyphs
     clustersByParent.forEach((meta) => {
       if (meta.memberNodes.length >= 4 && !expandedClusters.has(meta.clusterId)) {
+        // Cluster glyph: is_terminal is purely informational for the inspector.
+        // Visual color is always purple (cluster branch runs before terminal branch in the color logic).
         visibleNodes.push({
           id: meta.clusterId,
-          type: 'intermediary',
+          type: 'cluster',
           is_root: false,
-          is_terminal: meta.terminalCount > 0,
+          is_terminal: false,  // Cluster glyphs are NEVER styled as terminals
           role: 'CLUSTER',
-          hop: 2,
+          hop: (nodeLayer.get(meta.parentId) ?? 1) + 1,
           label: `⊞ BRANCH (${meta.memberNodes.length})`,
           isCluster: true,
           clusterMeta: meta,
         });
-        nodeLayer.set(meta.clusterId, 2);
+        nodeLayer.set(meta.clusterId, (nodeLayer.get(meta.parentId) ?? 1) + 1);
       }
     });
 
@@ -370,41 +372,56 @@ export const NetworkGraphViewer: React.FC<NetworkGraphViewerProps> = ({
     // 7. Add nodes to Graphology with Semantic Zoom Label Policy
     visibleNodes.forEach((node) => {
       const isRoot = node.id === rootAccountId || node.is_root;
-      const isTerminal = node.role === 'L3' || node.is_terminal || (node.hop && node.hop >= 2);
+      // AUTHORITATIVE: terminal status is determined solely by is_terminal/role metadata from the backend.
+      // Hop number controls layout position only — it NEVER determines terminal classification.
+      const isTerminal = node.role === 'L3' || node.is_terminal === true;
       const isDistributor = node.role === 'L2';
       const isCluster = node.isCluster;
 
       const pos = nodePositions.get(node.id) || { x: 0, y: 0 };
 
+      // ── SEMANTIC COLOUR SYSTEM (light graph canvas) ──────────────
+      // ROOT:        strong violet  — investigation anchor
+      // L2 DIST.:    amber-orange   — pass-through distributor
+      // L3 TERMINAL: crimson red    — sink / cash-out
+      // CLUSTER:     violet-mid     — aggregated terminal bundle
+      // COLLECTOR:   emerald green  — L1 high fan-in
+      // NEUTRAL:     graphite grey  — regular account
       let baseSize = 9;
-      let baseColor = '#475569'; // Muted neutral slate
+      let baseColor = '#6b7280'; // Neutral graphite
       let zIndex = 10;
       let label = '';
 
       if (isRoot) {
         baseSize = 24;
-        baseColor = '#00d9ff'; // Cyan Subject anchor
+        baseColor = '#6d28d9'; // Deep violet — ROOT
         zIndex = 100;
         label = `★ ${node.id} [SUBJECT]`;
       } else if (isCluster && node.clusterMeta) {
         baseSize = 18;
-        baseColor = '#8b5cf6'; // Iris purple cluster
+        baseColor = '#7c3aed'; // Violet — cluster glyph
         zIndex = 30;
         label = `⊞ CLUSTER (${node.clusterMeta.memberNodes.length} ACCTS)`;
       } else if (isTerminal) {
         baseSize = 14;
-        baseColor = '#f43f5e'; // Rose terminal
+        baseColor = '#dc2626'; // Crimson — L3 terminal/sink
         zIndex = 20;
         label = viewDetailMode === 'OVERVIEW' && isDenseNetwork ? '' : `● ${node.id}`;
       } else if (isDistributor) {
         baseSize = 12;
-        baseColor = '#8b5cf6'; // Violet distributor
+        baseColor = '#d97706'; // Amber — L2 distributor
         zIndex = 15;
         label = viewDetailMode === 'OVERVIEW' && isDenseNetwork ? '' : node.id;
+      } else if (node.role === 'L1') {
+        // L1 Collector — emerald
+        baseSize = 11;
+        baseColor = '#059669';
+        zIndex = 12;
+        label = viewDetailMode === 'DETAIL' || !isDenseNetwork ? node.id : '';
       } else {
-        // Intermediary
+        // Neutral regular account
         baseSize = 9;
-        baseColor = '#475569';
+        baseColor = '#6b7280';
         label = viewDetailMode === 'DETAIL' || !isDenseNetwork ? node.id : '';
       }
 
@@ -445,7 +462,8 @@ export const NetworkGraphViewer: React.FC<NetworkGraphViewerProps> = ({
         const edgeKey = `${edge.source}->${edge.target}-${edge.transaction_id || edge.id || idx}`;
         if (!graph.hasEdge(edgeKey)) {
           const isFromRoot = edge.source === rootAccountId;
-          const baseColor = isFromRoot ? '#0ea5e9' : '#8b5cf6';
+          // Edge colour: from-root = violet, downstream = muted grey-blue
+          const baseColor = isFromRoot ? '#6d28d9' : '#94a3b8';
 
           const amt = edge.amount || edge.attributed_amount || 0;
           const logAmt = Math.log10(Math.max(10, amt));
@@ -490,22 +508,34 @@ export const NetworkGraphViewer: React.FC<NetworkGraphViewerProps> = ({
       }
     });
 
-    // 9. Instantiate Sigma renderer
+    // 9. Instantiate Sigma renderer — light canvas
     const renderer = new Sigma(graph, containerRef.current, {
+      allowInvalidContainer: true,
       renderEdgeLabels: true,
       defaultEdgeType: 'arrow',
-      defaultEdgeColor: '#334155',
-      defaultNodeColor: '#475569',
-      labelColor: { color: '#e2e8f0' },
+      defaultEdgeColor: '#cbd5e1',   // light grey default
+      defaultNodeColor: '#6b7280',   // graphite default
+      labelColor: { color: '#1a1d23' }, // dark graphite labels for readability
       labelFont: 'JetBrains Mono, monospace',
       labelSize: 10,
-      labelWeight: '500',
+      labelWeight: '600',
       minCameraRatio: 0.05,
       maxCameraRatio: 10,
     });
 
     renderer.getCamera().animatedReset({ duration: 0 });
     sigmaInstanceRef.current = renderer;
+
+    // BUG 2 FIX: Install initial reducers SYNCHRONOUSLY before Sigma's first render frame.
+    // Without this, Sigma would use defaultNodeColor (#475569 grey) for the first paint
+    // because the spotlight useEffect runs in a subsequent React render cycle.
+    // These initial reducers apply correct semantic colors immediately (no grey flash).
+    renderer.setSetting('nodeReducer', (_node, data) => {
+      return { ...data, color: data.baseColor, size: data.baseSize };
+    });
+    renderer.setSetting('edgeReducer', (_edge, data) => {
+      return { ...data, color: data.baseColor, size: data.baseSize };
+    });
 
     // Node click handler (supports cluster expansion or account selection)
     renderer.on('clickNode', ({ node }) => {
@@ -749,85 +779,87 @@ export const NetworkGraphViewer: React.FC<NetworkGraphViewerProps> = ({
   };
 
   return (
-    <div className="relative w-full h-[680px] bg-[#05070a] rounded-2xl border border-white/[0.08] overflow-hidden shadow-2xl">
-      {/* Canvas Atmospheric Horizon Texture */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,217,255,0.03)_0%,transparent_75%)] pointer-events-none" />
-
-      {/* Subtle Vertical Layer Propagation Guidelines */}
-      <div className="absolute inset-0 pointer-events-none flex justify-between px-16 sm:px-28 opacity-[0.04] z-0">
-        <div className="border-r border-dashed border-cyan-400 h-full" />
-        <div className="border-r border-dashed border-purple-400 h-full" />
-        <div className="border-r border-dashed border-rose-400 h-full" />
+    <div
+      className="relative w-full overflow-hidden"
+      style={{
+        height: 680,
+        backgroundColor: '#ffffff',
+        border: '1px solid rgba(0,0,0,0.09)',
+        borderRadius: 16,
+        boxShadow: '0 4px 24px rgba(0,0,0,0.07)',
+      }}
+    >
+      {/* Subtle Vertical Layer Propagation Guidelines — light */}
+      <div className="absolute inset-0 pointer-events-none flex justify-between px-16 sm:px-28 z-0" style={{ opacity: 0.03 }}>
+        <div className="border-r border-dashed border-violet-600 h-full" />
+        <div className="border-r border-dashed border-amber-500 h-full" />
+        <div className="border-r border-dashed border-red-600 h-full" />
       </div>
 
       {/* Canvas container */}
       <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
-      {/* Center Structural Guide Bar */}
-      <div className="absolute top-3.5 left-1/2 -translate-x-1/2 pointer-events-none hidden lg:flex items-center gap-3 text-[10px] font-mono tracking-widest uppercase select-none z-10 bg-[#070a12]/85 px-4 py-1.5 rounded-full border border-white/[0.06] backdrop-blur-sm shadow-xl">
+      {/* Center Structural Guide Bar — light */}
+      <div
+        className="absolute top-3.5 left-1/2 -translate-x-1/2 pointer-events-none hidden lg:flex items-center gap-3 text-[10px] font-mono tracking-widest uppercase select-none z-10 px-4 py-1.5 rounded-full backdrop-blur-sm"
+        style={{ backgroundColor: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.09)', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+      >
         {layerHeaders.map((hdr, idx) => (
           <div key={hdr.label} className="flex items-center gap-2">
             <span className={hdr.color}>{hdr.label}</span>
-            {idx < layerHeaders.length - 1 && <span className="text-slate-600 font-bold">→</span>}
+            {idx < layerHeaders.length - 1 && <span style={{ color: '#94a3b8', fontWeight: 700 }}>→</span>}
           </div>
         ))}
       </div>
 
-      {/* Floating Toolbar: Modes, Semantic Zoom & Camera Controls */}
+      {/* ── Floating Toolbar — light theme ────────────────────── */}
       <div className="absolute top-3.5 left-3.5 z-10 flex flex-wrap items-center gap-2">
-        <div className="flex items-center bg-[#070a12]/90 backdrop-blur-md border border-white/[0.08] p-1 rounded-xl shadow-xl text-xs font-mono">
+        <div
+          className="flex items-center p-1 rounded-xl text-xs font-mono"
+          style={{
+            backgroundColor: 'rgba(255,255,255,0.95)',
+            border: '1px solid rgba(0,0,0,0.1)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          }}
+        >
           {/* Detail Mode / Semantic Zoom */}
-          <div className="flex items-center gap-1 pr-1.5 border-r border-white/[0.08]">
-            <button
-              onClick={() => setViewDetailMode('OVERVIEW')}
-              title="Overview Mode: Aggregated branches & topology"
-              className={`px-2 py-1 rounded text-[11px] transition ${
-                viewDetailMode === 'OVERVIEW'
-                  ? 'bg-cyan-500/20 text-cyan-300 font-medium border border-cyan-500/30'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              OVERVIEW
-            </button>
-            <button
-              onClick={() => setViewDetailMode('NETWORK')}
-              title="Network Mode: Display all real accounts"
-              className={`px-2 py-1 rounded text-[11px] transition ${
-                viewDetailMode === 'NETWORK'
-                  ? 'bg-purple-500/20 text-purple-300 font-medium border border-purple-500/30'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              NETWORK
-            </button>
-            <button
-              onClick={() => setViewDetailMode('DETAIL')}
-              title="Detail Mode: Full node and edge annotations"
-              className={`px-2 py-1 rounded text-[11px] transition ${
-                viewDetailMode === 'DETAIL'
-                  ? 'bg-slate-800 text-slate-100 font-medium border border-white/[0.1]'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              DETAIL
-            </button>
+          <div className="flex items-center gap-1 pr-1.5" style={{ borderRight: '1px solid rgba(0,0,0,0.08)' }}>
+            {(['OVERVIEW','NETWORK','DETAIL'] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setViewDetailMode(mode)}
+                className="px-2 py-1 rounded text-[11px] transition"
+                style={viewDetailMode === mode
+                  ? { backgroundColor: '#ede9fe', color: '#6d28d9', fontWeight: 600, border: '1px solid rgba(109,40,217,0.25)' }
+                  : { color: '#6b7280', border: '1px solid transparent' }
+                }
+              >
+                {mode}
+              </button>
+            ))}
           </div>
 
-          {/* Expand / Collapse Controls (Only relevant on dense networks) */}
+          {/* Expand / Collapse */}
           {isDenseNetwork && (
-            <div className="flex items-center gap-1 px-1.5 border-r border-white/[0.08]">
+            <div className="flex items-center gap-1 px-1.5" style={{ borderRight: '1px solid rgba(0,0,0,0.08)' }}>
               <button
                 onClick={handleExpandAll}
-                title="Expand All Clusters into Real Accounts"
-                className="px-1.5 py-1 text-[10px] text-slate-400 hover:text-cyan-300 hover:bg-slate-800/60 rounded transition flex items-center gap-1"
+                title="Expand All Clusters"
+                className="px-1.5 py-1 text-[10px] rounded transition flex items-center gap-1"
+                style={{ color: '#6b7280' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f3f4f6'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
               >
                 <Maximize2 className="w-3 h-3" />
                 <span>EXPAND</span>
               </button>
               <button
                 onClick={handleCollapseAll}
-                title="Collapse All Clusters to Overview"
-                className="px-1.5 py-1 text-[10px] text-slate-400 hover:text-purple-300 hover:bg-slate-800/60 rounded transition flex items-center gap-1"
+                title="Collapse All Clusters"
+                className="px-1.5 py-1 text-[10px] rounded transition flex items-center gap-1"
+                style={{ color: '#6b7280' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f3f4f6'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
               >
                 <Minimize2 className="w-3 h-3" />
                 <span>COLLAPSE</span>
@@ -835,48 +867,53 @@ export const NetworkGraphViewer: React.FC<NetworkGraphViewerProps> = ({
             </div>
           )}
 
-          {/* Camera & Focus Subject Controls */}
+          {/* Camera controls */}
           <div className="flex items-center gap-1 pl-1">
             <button
               onClick={handleFocusSubject}
               title="Focus Subject Anchor"
-              className="px-2 py-1 text-[10px] text-cyan-400 hover:bg-cyan-950/40 rounded transition flex items-center gap-1 font-semibold"
+              className="px-2 py-1 text-[10px] rounded transition flex items-center gap-1 font-semibold"
+              style={{ color: '#6d28d9' }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#ede9fe'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
             >
               <Crosshair className="w-3 h-3" />
               <span className="hidden sm:inline">SUBJECT</span>
             </button>
-            <button
-              onClick={handleZoomIn}
-              title="Zoom In"
-              className="p-1 text-slate-400 hover:text-cyan-300 hover:bg-slate-800/80 rounded transition"
-            >
-              <ZoomIn className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={handleZoomOut}
-              title="Zoom Out"
-              className="p-1 text-slate-400 hover:text-cyan-300 hover:bg-slate-800/80 rounded transition"
-            >
-              <ZoomOut className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={handleReset}
-              title="Reset View / Fit Graph"
-              className="p-1 text-slate-400 hover:text-cyan-300 hover:bg-slate-800/80 rounded transition"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
+            {[{ fn: handleZoomIn, Icon: ZoomIn, title: 'Zoom In' }, { fn: handleZoomOut, Icon: ZoomOut, title: 'Zoom Out' }, { fn: handleReset, Icon: RotateCcw, title: 'Reset View' }]
+              .map(({ fn, Icon, title }) => (
+                <button
+                  key={title}
+                  onClick={fn}
+                  title={title}
+                  className="p-1 rounded transition"
+                  style={{ color: '#6b7280' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f3f4f6'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                </button>
+              ))
+            }
           </div>
         </div>
 
-        {/* Selected Spotlight Indicator */}
+        {/* Selected node focus pill */}
         {selectedNode && selectedNode !== rootAccountId && (
-          <div className="hidden sm:flex items-center gap-1.5 bg-cyan-950/50 border border-cyan-500/40 px-2.5 py-1.5 rounded-xl text-[10px] font-mono text-cyan-300 backdrop-blur-md shadow-lg">
-            <Crosshair className="w-3 h-3 text-cyan-400" />
+          <div
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] font-mono"
+            style={{
+              backgroundColor: '#ede9fe',
+              border: '1px solid rgba(109,40,217,0.3)',
+              color: '#6d28d9',
+            }}
+          >
+            <Crosshair className="w-3 h-3" />
             <span>FOCUS: {selectedNode}</span>
             <button
               onClick={() => setSelectedNode(null)}
-              className="text-slate-400 hover:text-slate-200 ml-1 text-xs"
+              className="ml-1 text-xs"
+              style={{ color: '#6b7280' }}
             >
               &times;
             </button>
@@ -884,104 +921,167 @@ export const NetworkGraphViewer: React.FC<NetworkGraphViewerProps> = ({
         )}
       </div>
 
-      {/* Top-Right: Scale Indicator & Forensic Stats Strip */}
-      <div className="absolute top-3.5 right-3.5 z-10 flex items-center gap-2">
-        {truncated && (
-          <div className="bg-amber-950/50 border border-amber-500/30 text-amber-300 px-2.5 py-1.5 rounded-xl text-[10px] font-mono">
-            Capped at {nodeLimit} nodes
-          </div>
-        )}
-        <div className="bg-[#070a12]/90 backdrop-blur-md border border-white/[0.08] px-3.5 py-1.5 rounded-xl text-[11px] font-mono text-slate-300 flex items-center gap-3 shadow-xl">
-          <div>
-            <span>Nodes: </span>
-            <span className="text-cyan-300 font-semibold">{nodes.length}</span>
-          </div>
-          <span className="text-slate-600">&bull;</span>
-          <div>
-            <span>Edges: </span>
-            <span className="text-cyan-300 font-semibold">{edges.length}</span>
-          </div>
-          {isDenseNetwork && (
-            <>
-              <span className="text-slate-600">&bull;</span>
-              <span className="text-purple-300 text-[10px] font-semibold tracking-wider">
-                DENSE NETWORK
-              </span>
-            </>
+      {/* ── Top-Right: Stats + Semantic Legend ────────────────── */}
+      <div className="absolute top-3.5 right-3.5 z-10 flex flex-col items-end gap-2">
+        <div className="flex items-center gap-2">
+          {truncated && (
+            <div
+              className="px-2.5 py-1.5 rounded-xl text-[10px] font-mono"
+              style={{ backgroundColor: '#fffbeb', border: '1px solid rgba(217,119,6,0.3)', color: '#d97706' }}
+            >
+              Capped at {nodeLimit} nodes
+            </div>
           )}
+          <div
+            className="px-3.5 py-1.5 rounded-xl text-[11px] font-mono flex items-center gap-3"
+            style={{
+              backgroundColor: 'rgba(255,255,255,0.95)',
+              border: '1px solid rgba(0,0,0,0.1)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+              color: '#374151',
+            }}
+          >
+            <div>
+              <span>Nodes: </span>
+              <span className="font-semibold" style={{ color: '#6d28d9' }}>{nodes.length}</span>
+            </div>
+            <span style={{ color: '#d1d5db' }}>&bull;</span>
+            <div>
+              <span>Edges: </span>
+              <span className="font-semibold" style={{ color: '#6d28d9' }}>{edges.length}</span>
+            </div>
+            {isDenseNetwork && (
+              <>
+                <span style={{ color: '#d1d5db' }}>&bull;</span>
+                <span className="text-[10px] font-semibold tracking-wider" style={{ color: '#7c3aed' }}>
+                  DENSE
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Semantic Legend — always visible */}
+        <div
+          className="px-3 py-2.5 rounded-xl text-[10px] font-mono space-y-1.5"
+          style={{
+            backgroundColor: 'rgba(255,255,255,0.95)',
+            border: '1px solid rgba(0,0,0,0.1)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          }}
+        >
+          <div className="text-[9px] font-semibold tracking-[0.15em] uppercase pb-1" style={{ color: '#9ca3af', borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
+            Node Role Legend
+          </div>
+          {[
+            { color: '#6d28d9', label: 'ROOT', desc: 'Investigation target' },
+            { color: '#059669', label: 'L1 COLLECTOR',    desc: 'High fan-in aggregation' },
+            { color: '#d97706', label: 'L2 DISTRIBUTOR',  desc: 'Pass-through dispersion' },
+            { color: '#dc2626', label: 'L3 TERMINAL',     desc: 'Sink / cash-out' },
+            { color: '#6b7280', label: 'REGULAR',         desc: 'Normal account' },
+          ].map(({ color, label, desc }) => (
+            <div key={label} className="flex items-center gap-2">
+              <span
+                className="w-2.5 h-2.5 rounded-full shrink-0"
+                style={{ backgroundColor: color, border: `2px solid ${color}30` }}
+              />
+              <span className="font-semibold w-24" style={{ color: '#374151' }}>{label}</span>
+              <span style={{ color: '#9ca3af' }}>{desc}</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Bottom-Left: Subtle Forensic Minimap Preview */}
-      <div className="absolute bottom-4 left-4 z-10 hidden sm:block bg-[#070a12]/80 backdrop-blur-md border border-white/[0.08] rounded-xl p-1.5 shadow-2xl pointer-events-none">
+      {/* ── Bottom-Left: Minimap ──────────────────────────────── */}
+      <div
+        className="absolute bottom-4 left-4 z-10 hidden sm:block rounded-xl p-1.5 pointer-events-none"
+        style={{
+          backgroundColor: 'rgba(255,255,255,0.9)',
+          border: '1px solid rgba(0,0,0,0.09)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        }}
+      >
         <canvas ref={minimapCanvasRef} width={130} height={70} className="rounded" />
-        <div className="flex justify-between items-center px-1 pt-1 text-[9px] font-mono text-slate-400">
+        <div className="flex justify-between items-center px-1 pt-1 text-[9px] font-mono" style={{ color: '#9ca3af' }}>
           <span>TOPOLOGY MAP</span>
           <span>{nodes.length} ACCTS</span>
         </div>
       </div>
 
-      {/* Bottom-Right Contextual Inspector: Entity or Branch Cluster */}
+      {/* ── Bottom-Right Contextual Inspector ───────────────── */}
       {(selectedNode || selectedCluster || selectedEdge) && (
-        <div className="absolute bottom-4 right-4 z-10 w-84 sm:w-96 surface-elevated p-4 rounded-2xl shadow-2xl text-xs space-y-3 border border-white/[0.10] animate-in fade-in slide-in-from-bottom-2 duration-150">
+        <div
+          className="absolute bottom-4 right-4 z-10 w-84 sm:w-96 p-4 rounded-2xl text-xs space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-150"
+          style={{
+            backgroundColor: '#ffffff',
+            border: '1px solid rgba(0,0,0,0.1)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+          }}
+        >
           {/* A: Entity Inspector */}
           {selectedNode && (
             <div className="space-y-2.5">
-              <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+              <div
+                className="flex items-center justify-between pb-2"
+                style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}
+              >
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-cyan-400 font-medium uppercase tracking-wider">
+                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider" style={{ color: '#6d28d9' }}>
                     ENTITY INSPECTOR
                   </span>
                   {selectedNode === rootAccountId && (
-                    <span className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[9px] px-1.5 py-0.2 rounded font-mono font-medium">
+                    <span
+                      className="text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold"
+                      style={{ backgroundColor: '#ede9fe', color: '#6d28d9', border: '1px solid rgba(109,40,217,0.25)' }}
+                    >
                       SUBJECT ROOT
                     </span>
                   )}
                 </div>
                 <button
                   onClick={() => setSelectedNode(null)}
-                  className="text-slate-400 hover:text-slate-200 text-[11px] font-mono"
+                  className="text-[11px] font-mono"
+                  style={{ color: '#9ca3af' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#374151'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#9ca3af'; }}
                 >
                   Close
                 </button>
               </div>
 
               <div className="font-mono space-y-1">
-                <div className="text-base font-semibold text-slate-100 select-all">{selectedNode}</div>
-                <div className="text-[11px] text-slate-400">
-                  {selectedNode === rootAccountId
-                    ? 'Root investigation starting entity'
-                    : 'Downstream network participant'}
+                <div className="text-base font-semibold select-all" style={{ color: '#1a1d23' }}>{selectedNode}</div>
+                <div className="text-[11px]" style={{ color: '#6b7280' }}>
+                  {selectedNode === rootAccountId ? 'Root investigation starting entity' : 'Downstream network participant'}
                 </div>
               </div>
 
-              {/* Quick Actions Grid */}
+              {/* Quick Actions */}
               <div className="pt-2 grid grid-cols-2 gap-1.5 font-mono text-[11px]">
                 <button
                   onClick={() => navigate(`/victim/${selectedNode}`)}
-                  className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 transition"
+                  className="font-semibold py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 transition text-white"
+                  style={{ backgroundColor: '#6d28d9' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#7c3aed'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#6d28d9'; }}
                 >
                   <span>Investigate</span>
                   <ArrowUpRight className="w-3 h-3" />
                 </button>
-                <button
-                  onClick={() => navigate(`/timeline?account_id=${selectedNode}`)}
-                  className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 py-1.5 px-2 rounded-lg transition text-center"
-                >
-                  Timeline
-                </button>
-                <button
-                  onClick={() => navigate(`/transactions?account=${selectedNode}`)}
-                  className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 py-1.5 px-2 rounded-lg transition text-center"
-                >
-                  Transactions
-                </button>
-                <button
-                  onClick={() => navigate(`/account/${selectedNode}`)}
-                  className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 py-1.5 px-2 rounded-lg transition text-center"
-                >
-                  Profile
-                </button>
+                {[['Timeline', `/timeline?account_id=${selectedNode}`], ['Transactions', `/transactions?account=${selectedNode}`], ['Profile', `/account/${selectedNode}`]]
+                  .map(([label, path]) => (
+                    <button
+                      key={label}
+                      onClick={() => navigate(path)}
+                      className="py-1.5 px-2 rounded-lg transition text-center"
+                      style={{ backgroundColor: '#f3f4f6', border: '1px solid rgba(0,0,0,0.08)', color: '#374151' }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#e9ecef'; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f3f4f6'; }}
+                    >
+                      {label}
+                    </button>
+                  ))
+                }
               </div>
             </div>
           )}
@@ -989,38 +1089,36 @@ export const NetworkGraphViewer: React.FC<NetworkGraphViewerProps> = ({
           {/* B: Cluster Inspector */}
           {selectedCluster && (
             <div className="space-y-2.5">
-              <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+              <div className="flex items-center justify-between pb-2" style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-purple-400 font-semibold uppercase tracking-wider">
-                    DOWNSTREAM CLUSTER INSPECTOR
+                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider" style={{ color: '#7c3aed' }}>
+                    CLUSTER INSPECTOR
                   </span>
-                  <span className="bg-purple-950 text-purple-300 border border-purple-500/30 text-[9px] px-1.5 py-0.2 rounded font-mono">
+                  <span
+                    className="text-[9px] px-1.5 py-0.5 rounded font-mono"
+                    style={{ backgroundColor: '#ede9fe', color: '#7c3aed', border: '1px solid rgba(124,58,237,0.25)' }}
+                  >
                     {selectedCluster.memberNodes.length} ACCOUNTS
                   </span>
                 </div>
-                <button
-                  onClick={() => setSelectedCluster(null)}
-                  className="text-slate-400 hover:text-slate-200 text-[11px] font-mono"
-                >
-                  Close
-                </button>
+                <button onClick={() => setSelectedCluster(null)} className="text-[11px] font-mono" style={{ color: '#9ca3af' }}>Close</button>
               </div>
 
               <div className="font-mono text-[11px] space-y-1.5">
                 <div>
-                  <span className="text-slate-400 text-[9px] block uppercase">PARENT DISTRIBUTOR</span>
-                  <span className="text-slate-200 font-semibold">{selectedCluster.parentId}</span>
+                  <span className="text-[9px] block uppercase" style={{ color: '#9ca3af' }}>PARENT DISTRIBUTOR</span>
+                  <span className="font-semibold" style={{ color: '#1a1d23' }}>{selectedCluster.parentId}</span>
                 </div>
                 <div className="flex justify-between">
                   <div>
-                    <span className="text-slate-400 text-[9px] block uppercase">CUMULATIVE FLOW</span>
-                    <span className="text-purple-300 font-semibold text-sm tabular-nums">
+                    <span className="text-[9px] block uppercase" style={{ color: '#9ca3af' }}>CUMULATIVE FLOW</span>
+                    <span className="font-semibold text-sm tabular-nums" style={{ color: '#7c3aed' }}>
                       ₹{Math.round(selectedCluster.totalVolume).toLocaleString()}
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-400 text-[9px] block uppercase">TERMINAL SINKS</span>
-                    <span className="text-rose-400 font-semibold text-sm tabular-nums">
+                    <span className="text-[9px] block uppercase" style={{ color: '#9ca3af' }}>TERMINAL SINKS</span>
+                    <span className="font-semibold text-sm tabular-nums" style={{ color: '#dc2626' }}>
                       {selectedCluster.terminalCount}
                     </span>
                   </div>
@@ -1030,14 +1128,13 @@ export const NetworkGraphViewer: React.FC<NetworkGraphViewerProps> = ({
               <div className="pt-2">
                 <button
                   onClick={() => {
-                    setExpandedClusters((prev) => {
-                      const next = new Set(prev);
-                      next.add(selectedCluster.clusterId);
-                      return next;
-                    });
+                    setExpandedClusters((prev) => { const next = new Set(prev); next.add(selectedCluster.clusterId); return next; });
                     setSelectedCluster(null);
                   }}
-                  className="w-full bg-purple-600 hover:bg-purple-500 text-white font-mono text-xs py-2 rounded-lg font-semibold transition flex items-center justify-center gap-1.5"
+                  className="w-full text-white font-mono text-xs py-2 rounded-lg font-semibold transition flex items-center justify-center gap-1.5"
+                  style={{ backgroundColor: '#7c3aed' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#6d28d9'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#7c3aed'; }}
                 >
                   <span>EXPAND {selectedCluster.memberNodes.length} ACCOUNTS INTO GRAPH</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -1049,40 +1146,43 @@ export const NetworkGraphViewer: React.FC<NetworkGraphViewerProps> = ({
           {/* C: Flow Edge Inspector */}
           {selectedEdge && (
             <div className="space-y-2.5">
-              <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
-                <span className="text-[10px] font-mono text-cyan-400 font-medium uppercase tracking-wider">
+              <div className="flex items-center justify-between pb-2" style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
+                <span className="text-[10px] font-mono font-semibold uppercase tracking-wider" style={{ color: '#6d28d9' }}>
                   FLOW INSPECTOR
                 </span>
-                <span className="bg-slate-800 text-slate-300 border border-white/[0.06] text-[10px] px-1.5 py-0.2 rounded font-mono">
+                <span
+                  className="text-[10px] px-1.5 py-0.5 rounded font-mono"
+                  style={{ backgroundColor: '#f3f4f6', border: '1px solid rgba(0,0,0,0.08)', color: '#374151' }}
+                >
                   {selectedEdge.payment_mode}
                 </span>
               </div>
 
               <div className="space-y-2 font-mono text-[11px]">
                 <div>
-                  <span className="text-slate-400 text-[9px] block uppercase">TRANSACTION ID</span>
-                  <span className="text-slate-200 font-medium">{selectedEdge.transaction_id}</span>
+                  <span className="text-[9px] block uppercase" style={{ color: '#9ca3af' }}>TRANSACTION ID</span>
+                  <span className="font-medium" style={{ color: '#1a1d23' }}>{selectedEdge.transaction_id}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-slate-400 text-[9px] block uppercase">FLOW AMOUNT</span>
-                    <span className="text-emerald-400 font-semibold text-sm tabular-nums">
+                    <span className="text-[9px] block uppercase" style={{ color: '#9ca3af' }}>FLOW AMOUNT</span>
+                    <span className="font-semibold text-sm tabular-nums" style={{ color: '#059669' }}>
                       ₹{selectedEdge.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-400 text-[9px] block uppercase">IP ADDRESS</span>
-                    <span className="text-slate-300">{selectedEdge.ip_address || 'Unavailable'}</span>
+                    <span className="text-[9px] block uppercase" style={{ color: '#9ca3af' }}>IP ADDRESS</span>
+                    <span style={{ color: '#374151' }}>{selectedEdge.ip_address || 'Unavailable'}</span>
                   </div>
                 </div>
 
                 <div>
-                  <span className="text-slate-400 text-[9px] block uppercase">DIRECTION</span>
-                  <div className="text-slate-300 flex items-center gap-1.5 pt-0.5">
-                    <span className="text-cyan-300 font-medium">{selectedEdge.source}</span>
-                    <span className="text-slate-500">→</span>
-                    <span className="text-purple-300 font-medium">{selectedEdge.target}</span>
+                  <span className="text-[9px] block uppercase" style={{ color: '#9ca3af' }}>DIRECTION</span>
+                  <div className="flex items-center gap-1.5 pt-0.5">
+                    <span className="font-semibold" style={{ color: '#6d28d9' }}>{selectedEdge.source}</span>
+                    <span style={{ color: '#9ca3af' }}>→</span>
+                    <span className="font-semibold" style={{ color: '#dc2626' }}>{selectedEdge.target}</span>
                   </div>
                 </div>
               </div>

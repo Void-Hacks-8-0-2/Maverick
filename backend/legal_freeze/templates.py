@@ -48,6 +48,16 @@ def _template_freeze_request(
 
     sections: List[Dict[str, Any]] = [
         {
+            "id": "statutory_framework",
+            "heading": "Statutory Authority & Enabling Framework",
+            "content": (
+                "Statutory Empowering Provision: Requisition issued under Section 94 and Section 106 of the Bharatiya Nagarik Suraksha Sanhita, 2023 (BNSS) "
+                "(applicable to proceedings/FIRs registered on or after 1 July 2024), or the corresponding legacy provisions of Section 91 and Section 102 of the Code of Criminal Procedure, 1973 (CrPC) "
+                "(applicable to proceedings instituted prior to 1 July 2024 pursuant to the Section 531 BNSS savings clause), for the production of documents/records and temporary preservation of suspected proceeds of cyber-enabled financial crime.\n"
+                "Operational Status: DRAFT NOTICE — SUBJECT TO INDEPENDENT REVIEW, JURISDICTIONAL VERIFICATION, AND EXECUTION BY AUTHORIZED INVESTIGATING OFFICER PRIOR TO SERVICE UPON NODAL BANK."
+            ),
+        },
+        {
             "id": "authority",
             "heading": "1. Requesting Authority & Investigating Officer",
             "content": (

@@ -21,31 +21,31 @@ export const RiskBadge: React.FC<RiskBadgeProps> = ({
 
   const bandConfigs: Record<string, { bg: string; border: string; text: string; dot: string; label: string }> = {
     VERY_HIGH: {
-      bg: 'bg-rose-950/30',
-      border: 'border-rose-500/30',
-      text: 'text-rose-400',
-      dot: 'bg-rose-400',
+      bg: 'bg-rose-50',
+      border: 'border-rose-300',
+      text: 'text-rose-700',
+      dot: 'bg-rose-600',
       label: 'VERY HIGH RISK'
     },
     HIGH: {
-      bg: 'bg-rose-950/25',
-      border: 'border-rose-500/25',
-      text: 'text-rose-300',
-      dot: 'bg-rose-400',
+      bg: 'bg-rose-50',
+      border: 'border-rose-200',
+      text: 'text-rose-600',
+      dot: 'bg-rose-500',
       label: 'HIGH RISK'
     },
     MODERATE: {
-      bg: 'bg-amber-950/30',
-      border: 'border-amber-500/30',
-      text: 'text-amber-400',
-      dot: 'bg-amber-400',
+      bg: 'bg-amber-50',
+      border: 'border-amber-300',
+      text: 'text-amber-700',
+      dot: 'bg-amber-500',
       label: 'MODERATE RISK'
     },
     LOW: {
-      bg: 'bg-emerald-950/25',
-      border: 'border-emerald-500/30',
-      text: 'text-emerald-400',
-      dot: 'bg-emerald-400',
+      bg: 'bg-emerald-50',
+      border: 'border-emerald-300',
+      text: 'text-emerald-700',
+      dot: 'bg-emerald-500',
       label: 'LOW RISK'
     }
   };
