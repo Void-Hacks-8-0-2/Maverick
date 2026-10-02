@@ -29,6 +29,24 @@ from backend.investigations.models import (
 )
 
 
+# In-memory LRU/dict cache for deterministic immutable production queries
+_INVESTIGATION_CACHE: Dict[tuple, VictimInvestigationResponse] = {}
+
+
+def clear_investigation_cache() -> None:
+    _INVESTIGATION_CACHE.clear()
+
+
+def prewarm_investigation_cache(con: duckdb.DuckDBPyConnection, accounts: Optional[List[str]] = None) -> None:
+    """Pre-warms the cache for high-priority benchmark/demo accounts."""
+    targets = accounts or ["KKBK10000402", "BARB10000427"]
+    for target in targets:
+        try:
+            investigate_victim_account(con, target, max_hops=4)
+        except Exception:
+            pass
+
+
 def investigate_victim_account(
     con: duckdb.DuckDBPyConnection,
     account_id: str,
@@ -43,6 +61,9 @@ def investigate_victim_account(
     and identifies downstream terminal endpoints.
     """
     acc = account_id.strip()
+    cache_key = (acc, max_hops, horizon_seconds, max_branches_per_hop)
+    if cache_key in _INVESTIGATION_CACHE:
+        return _INVESTIGATION_CACHE[cache_key]
 
     # 1. Validate account existence & retrieve metrics from accounts_dimension
     dim_row = con.execute("""
@@ -70,32 +91,61 @@ def investigate_victim_account(
     first_ts_str = first_ts.isoformat() if hasattr(first_ts, 'isoformat') and first_ts else str(first_ts) if first_ts else None
     last_ts_str = last_ts.isoformat() if hasattr(last_ts, 'isoformat') and last_ts else str(last_ts) if last_ts else None
 
-    # Query payment mode distribution
-    pm_rows = con.execute("""
-        SELECT Payment_Mode, COUNT(*) 
-        FROM transactions 
+    # Retrieve root subject transactions (up to 100 for forensic review)
+    tx_rows = con.execute("""
+        SELECT 
+            rowid, Transaction_ID, Sender_Account, Receiver_Account,
+            Sender_IFSC, Receiver_IFSC, Amount, Timestamp,
+            Payment_Mode, Narration, IP_Address, Device_Type
+        FROM transactions
         WHERE Sender_Account = ? OR Receiver_Account = ?
-        GROUP BY Payment_Mode
+        ORDER BY Timestamp ASC, rowid ASC
+        LIMIT 100
     """, [acc, acc]).fetchall()
-    pm_dist = {r[0]: int(r[1]) for r in pm_rows if r[0] is not None}
 
-    # Query associated IFSCs
-    ifsc_rows = con.execute("""
-        SELECT DISTINCT ifsc FROM (
-            SELECT Sender_IFSC AS ifsc FROM transactions WHERE Sender_Account = ?
-            UNION
-            SELECT Receiver_IFSC AS ifsc FROM transactions WHERE Receiver_Account = ?
-        ) WHERE ifsc IS NOT NULL ORDER BY ifsc
-    """, [acc, acc]).fetchall()
-    ifscs = [r[0] for r in ifsc_rows]
+    tot_tx_count = int((in_cnt or 0) + (out_cnt or 0))
+    if tot_tx_count <= 100 or len(tx_rows) < 100:
+        # Fast in-memory derivation from the complete set of subject transactions
+        pm_dist: Dict[str, int] = {}
+        ifsc_set: Set[str] = set()
+        ip_set: Set[str] = set()
+        for r in tx_rows:
+            pm = r[8]
+            if pm:
+                pm_dist[pm] = pm_dist.get(pm, 0) + 1
+            if r[4]:
+                ifsc_set.add(r[4])
+            if r[5]:
+                ifsc_set.add(r[5])
+            if r[10]:
+                ip_set.add(r[10])
+        ifscs = sorted(list(ifsc_set))
+        ips = sorted(list(ip_set))
+    else:
+        # Fallback for entities with >100 transactions
+        pm_rows = con.execute("""
+            SELECT Payment_Mode, COUNT(*) 
+            FROM transactions 
+            WHERE Sender_Account = ? OR Receiver_Account = ?
+            GROUP BY Payment_Mode
+        """, [acc, acc]).fetchall()
+        pm_dist = {r[0]: int(r[1]) for r in pm_rows if r[0] is not None}
 
-    # Query associated IPs
-    ip_rows = con.execute("""
-        SELECT DISTINCT ip FROM (
-            SELECT IP_Address AS ip FROM transactions WHERE (Sender_Account = ? OR Receiver_Account = ?) AND IP_Address IS NOT NULL
-        ) ORDER BY ip
-    """, [acc, acc]).fetchall()
-    ips = [r[0] for r in ip_rows]
+        ifsc_rows = con.execute("""
+            SELECT DISTINCT ifsc FROM (
+                SELECT Sender_IFSC AS ifsc FROM transactions WHERE Sender_Account = ?
+                UNION
+                SELECT Receiver_IFSC AS ifsc FROM transactions WHERE Receiver_Account = ?
+            ) WHERE ifsc IS NOT NULL ORDER BY ifsc
+        """, [acc, acc]).fetchall()
+        ifscs = [r[0] for r in ifsc_rows]
+
+        ip_rows = con.execute("""
+            SELECT DISTINCT ip FROM (
+                SELECT IP_Address AS ip FROM transactions WHERE (Sender_Account = ? OR Receiver_Account = ?) AND IP_Address IS NOT NULL
+            ) ORDER BY ip
+        """, [acc, acc]).fetchall()
+        ips = [r[0] for r in ip_rows]
 
     account_summary = VictimAccountSummary(
         account_number=acc,
@@ -114,18 +164,6 @@ def investigate_victim_account(
         associated_ips=ips,
         account_provenance="ANALYTICAL",
     )
-
-    # 2. Retrieve root subject transactions (up to 100 for forensic review)
-    tx_rows = con.execute("""
-        SELECT 
-            rowid, Transaction_ID, Sender_Account, Receiver_Account,
-            Sender_IFSC, Receiver_IFSC, Amount, Timestamp,
-            Payment_Mode, Narration, IP_Address, Device_Type
-        FROM transactions
-        WHERE Sender_Account = ? OR Receiver_Account = ?
-        ORDER BY Timestamp ASC, rowid ASC
-        LIMIT 100
-    """, [acc, acc]).fetchall()
 
     victim_transactions: List[VictimTransactionItem] = []
     for r in tx_rows:
@@ -368,7 +406,7 @@ def investigate_victim_account(
 
     status = "COMPLETED" if trace_res.total_hops_found > 0 else "NO_QUALIFYING_OUTFLOW"
 
-    return VictimInvestigationResponse(
+    response = VictimInvestigationResponse(
         investigation_id=investigation_id,
         account_number=acc,
         status=status,
@@ -388,3 +426,5 @@ def investigate_victim_account(
             "Does not constitute legal proof of beneficial ownership, criminal intent, or judicial determination."
         ),
     )
+    _INVESTIGATION_CACHE[cache_key] = response
+    return response

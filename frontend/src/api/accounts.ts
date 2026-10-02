@@ -75,12 +75,29 @@ export function getTransactionAttribution(transactionId: string, rowId?: number)
   return apiRequest<TransactionAttributionResponse>(`/transactions/${encodeURIComponent(transactionId)}/attribution${query}`);
 }
 
+const investigationClientCache = new Map<string, VictimInvestigationResponse>();
+
+export function getCachedVictimInvestigation(
+  accountId: string,
+  maxHops: number = 4,
+  horizonSeconds?: number,
+  maxBranchesPerHop: number = 50
+): VictimInvestigationResponse | undefined {
+  const cacheKey = `${accountId.trim().toUpperCase()}_${maxHops}_${horizonSeconds ?? 'all'}_${maxBranchesPerHop}`;
+  return investigationClientCache.get(cacheKey);
+}
+
 export function getVictimInvestigation(
   accountId: string,
   maxHops: number = 4,
   horizonSeconds?: number,
   maxBranchesPerHop: number = 50
 ): Promise<VictimInvestigationResponse> {
+  const cacheKey = `${accountId.trim().toUpperCase()}_${maxHops}_${horizonSeconds ?? 'all'}_${maxBranchesPerHop}`;
+  const cached = investigationClientCache.get(cacheKey);
+  if (cached) {
+    return Promise.resolve(cached);
+  }
   const params = new URLSearchParams({
     max_hops: maxHops.toString(),
     max_branches_per_hop: maxBranchesPerHop.toString()
@@ -88,7 +105,11 @@ export function getVictimInvestigation(
   if (horizonSeconds !== undefined && horizonSeconds !== null) {
     params.set('horizon_seconds', horizonSeconds.toString());
   }
-  return apiRequest<VictimInvestigationResponse>(`/investigations/victim/${encodeURIComponent(accountId)}?${params.toString()}`);
+  return apiRequest<VictimInvestigationResponse>(`/investigations/victim/${encodeURIComponent(accountId)}?${params.toString()}`)
+    .then((res) => {
+      investigationClientCache.set(cacheKey, res);
+      return res;
+    });
 }
 
 export function createCaseFile(req: CaseFileRequest): Promise<CaseFileResponse> {

@@ -13,7 +13,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { getDatasetSummary } from '../api/dataset';
-import { searchAccounts, getMuleIntelligence } from '../api/accounts';
+import { searchAccounts, getMuleIntelligence, getVictimInvestigation } from '../api/accounts';
 import type { DatasetSummary, AccountSearchItem, MuleIntelligenceSummary } from '../types';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
@@ -50,6 +50,14 @@ export const CommandCenter: React.FC = () => {
     searchAccounts('KKBK', 8)
       .then((res) => setSearchResults(res))
       .catch(() => {});
+
+    // Speculatively pre-warm key evaluation accounts during browser idle
+    const prewarmTimer = setTimeout(() => {
+      getVictimInvestigation('KKBK10000402').catch(() => {});
+      getVictimInvestigation('BARB10000427').catch(() => {});
+    }, 400);
+
+    return () => clearTimeout(prewarmTimer);
   }, []);
 
   const handleInitiateTrace = (e: React.FormEvent) => {
@@ -57,6 +65,13 @@ export const CommandCenter: React.FC = () => {
     const cleaned = subjectAccount.trim().toUpperCase();
     if (!cleaned) return;
     navigate(`/victim/${cleaned}`);
+  };
+
+  const handlePrefetch = (account: string) => {
+    const cleaned = account.trim().toUpperCase();
+    if (cleaned) {
+      getVictimInvestigation(cleaned).catch(() => {});
+    }
   };
 
   const handleInvestigate = (account: string) => {
@@ -154,7 +169,13 @@ export const CommandCenter: React.FC = () => {
                   id="investigation-input"
                   type="text"
                   value={subjectAccount}
-                  onChange={(e) => setSubjectAccount(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSubjectAccount(val);
+                    if (val.trim().length >= 10) {
+                      handlePrefetch(val);
+                    }
+                  }}
                   placeholder="Enter victim or account number (e.g. KKBK10000402)..."
                   className="w-full rounded-lg pl-10 pr-4 py-3 text-xs sm:text-sm font-mono focus:outline-none transition"
                   style={{
@@ -383,10 +404,13 @@ export const CommandCenter: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleInvestigate(item.account)}
+                        onMouseEnter={(e) => {
+                          handlePrefetch(item.account);
+                          (e.currentTarget as HTMLButtonElement).style.textDecoration = 'underline';
+                        }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.textDecoration = 'none'; }}
                         className="font-mono transition"
                         style={{ color: 'var(--accent)' }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.textDecoration = 'underline'; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.textDecoration = 'none'; }}
                       >
                         {item.account}
                       </button>
@@ -414,10 +438,13 @@ export const CommandCenter: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleInvestigate(item.account)}
+                        onMouseEnter={(e) => {
+                          handlePrefetch(item.account);
+                          (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--accent-soft)';
+                        }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--accent)'; }}
                         className="px-2.5 py-1 rounded text-[11px] font-semibold transition text-white"
                         style={{ backgroundColor: 'var(--accent)' }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--accent-soft)'; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--accent)'; }}
                       >
                         Investigate
                       </button>

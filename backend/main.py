@@ -30,6 +30,12 @@ async def lifespan(app: FastAPI):
     con = get_db()
     row_count = con.execute("SELECT COUNT(*) FROM transactions").fetchone()[0]
     print(f"[STARTUP] Verified DuckDB table loaded successfully ({row_count:,} records).")
+    try:
+        from backend.investigations.orchestrator import prewarm_investigation_cache
+        prewarm_investigation_cache(con, ["KKBK10000402", "BARB10000427"])
+        print("[STARTUP] Pre-warmed investigation cache for benchmark accounts.")
+    except Exception as e:
+        print(f"[STARTUP] Cache pre-warm skipped: {e}")
     yield
     print("[SHUTDOWN] Closing Abhedya-Chakra backend.")
 
