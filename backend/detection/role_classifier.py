@@ -13,8 +13,64 @@ Operates via vectorized DuckDB SQL transformations without row-by-row iteration.
 """
 
 import time
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, NamedTuple
 import duckdb
+
+
+class AccountRoleResult(NamedTuple):
+    """Lightweight role descriptor for a single account."""
+    account_number: str
+    role: str          # L1_COLLECTOR | L2_DISTRIBUTOR | L3_TERMINAL | MIXED | NONE
+    layer1: bool
+    layer2: bool
+    layer3: bool
+
+
+def get_account_role(
+    con: duckdb.DuckDBPyConnection,
+    account_id: str,
+) -> Optional[AccountRoleResult]:
+    """
+    Returns pre-computed role candidate flags for a single account from account_features.
+    The bulk classify_account_roles() must have already run at startup.
+    Returns None if the account is not present in account_features.
+    """
+    row = con.execute(
+        """
+        SELECT account_number, layer1_candidate, layer2_candidate, layer3_candidate
+        FROM account_features
+        WHERE account_number = ?
+        """,
+        [account_id.strip()],
+    ).fetchone()
+
+    if row is None:
+        return None
+
+    acc, l1, l2, l3 = row
+    l1 = bool(l1) if l1 is not None else False
+    l2 = bool(l2) if l2 is not None else False
+    l3 = bool(l3) if l3 is not None else False
+
+    flags = (l1, l2, l3)
+    if sum(flags) > 1:
+        role = "MIXED"
+    elif l1:
+        role = "L1_COLLECTOR"
+    elif l2:
+        role = "L2_DISTRIBUTOR"
+    elif l3:
+        role = "L3_TERMINAL"
+    else:
+        role = "NONE"
+
+    return AccountRoleResult(
+        account_number=acc,
+        role=role,
+        layer1=l1,
+        layer2=l2,
+        layer3=l3,
+    )
 
 from backend.detection.thresholds import (
     RoleClassificationThresholds,

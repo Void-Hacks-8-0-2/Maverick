@@ -57,6 +57,7 @@ def get_db() -> duckdb.DuckDBPyConnection:
         _con.execute("CREATE INDEX IF NOT EXISTS idx_sender_account ON transactions(Sender_Account)")
         _con.execute("CREATE INDEX IF NOT EXISTS idx_receiver_account ON transactions(Receiver_Account)")
         _con.execute("CREATE INDEX IF NOT EXISTS idx_transaction_id ON transactions(Transaction_ID)")
+        _con.execute("CREATE INDEX IF NOT EXISTS idx_timestamp ON transactions(Timestamp)")
         
         # Step 2: Materialize Tier 2 analytical accounts dimension & Tier 3 feature store
         init_analytical_tier(_con)

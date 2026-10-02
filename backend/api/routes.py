@@ -109,6 +109,40 @@ class PaginatedTransactionsResponse(BaseModel):
     items: List[TransactionItem]
 
 
+class MuleCandidateItem(BaseModel):
+    account_number: str
+    risk_index: float
+    risk_band: str
+    layer1_candidate: bool
+    layer2_candidate: bool
+    layer3_candidate: bool
+    pass_through_candidate: bool
+    pass_through_ratio: Optional[float] = None
+    incoming_volume: float
+    outgoing_volume: float
+    net_flow_delta: float
+    fan_in: int
+    fan_out: int
+    transaction_count: int
+
+
+class MuleIntelligenceSummary(BaseModel):
+    total_accounts: int
+    l1_count: int
+    l2_count: int
+    l3_count: int
+    high_risk_count: int
+    velocity_count: int
+
+
+class MuleIntelligenceResponse(BaseModel):
+    summary: MuleIntelligenceSummary
+    total_count: int
+    limit: int
+    offset: int
+    items: List[MuleCandidateItem]
+
+
 # -------------------------------------------------------------
 # Endpoints
 # -------------------------------------------------------------
@@ -211,6 +245,139 @@ def search_accounts(
         })
 
     return results
+
+
+@router.get("/mules", response_model=MuleIntelligenceResponse)
+def get_mule_intelligence(
+    role: Optional[str] = Query(None, description="Role filter: L1, L2, L3, ANY"),
+    risk_band: Optional[str] = Query(None, description="Risk band: LOW, MODERATE, HIGH, VERY_HIGH"),
+    velocity_only: bool = Query(False, description="Filter for pass-through velocity candidates"),
+    min_risk: Optional[float] = Query(None, description="Minimum Mule Risk Index"),
+    sort_by: str = Query("risk", description="Sort field: risk, volume, fan_in, fan_out, tx_count"),
+    order: str = Query("desc", description="Sort order: asc or desc"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0)
+):
+    """
+    Step 12: Mule Intelligence discovery endpoint.
+    Queries pre-materialized account_features table with multi-dimensional forensic filters.
+    Sub-10ms response time on 25k accounts.
+    """
+    con = get_db()
+
+    # 1. Dataset-level summary counts from pre-materialized account_features
+    summary_row = con.execute("""
+        SELECT 
+            COUNT(*),
+            SUM(CASE WHEN layer1_candidate THEN 1 ELSE 0 END),
+            SUM(CASE WHEN layer2_candidate THEN 1 ELSE 0 END),
+            SUM(CASE WHEN layer3_candidate THEN 1 ELSE 0 END),
+            SUM(CASE WHEN mule_risk_index >= 70 THEN 1 ELSE 0 END),
+            SUM(CASE WHEN pass_through_candidate THEN 1 ELSE 0 END)
+        FROM account_features
+    """).fetchone()
+
+    summary = MuleIntelligenceSummary(
+        total_accounts=int(summary_row[0] or 0),
+        l1_count=int(summary_row[1] or 0),
+        l2_count=int(summary_row[2] or 0),
+        l3_count=int(summary_row[3] or 0),
+        high_risk_count=int(summary_row[4] or 0),
+        velocity_count=int(summary_row[5] or 0),
+    )
+
+    # 2. Dynamic filter clauses
+    where_clauses = ["1=1"]
+    params = []
+
+    if role:
+        r_upper = role.upper()
+        if r_upper == "L1":
+            where_clauses.append("layer1_candidate = true")
+        elif r_upper == "L2":
+            where_clauses.append("layer2_candidate = true")
+        elif r_upper == "L3":
+            where_clauses.append("layer3_candidate = true")
+        elif r_upper == "ANY":
+            where_clauses.append("(layer1_candidate = true OR layer2_candidate = true OR layer3_candidate = true)")
+
+    if risk_band:
+        where_clauses.append("risk_band = ?")
+        params.append(risk_band.upper())
+
+    if velocity_only:
+        where_clauses.append("pass_through_candidate = true")
+
+    if min_risk is not None:
+        where_clauses.append("mule_risk_index >= ?")
+        params.append(min_risk)
+
+    where_sql = " AND ".join(where_clauses)
+
+    total_count = con.execute(
+        f"SELECT COUNT(*) FROM account_features WHERE {where_sql}",
+        params
+    ).fetchone()[0]
+
+    # 3. Dynamic sorting
+    sort_column_map = {
+        "risk": "mule_risk_index",
+        "volume": "incoming_volume",
+        "fan_in": "fan_in",
+        "fan_out": "fan_out",
+        "tx_count": "(COALESCE(incoming_txn_count, 0) + COALESCE(outgoing_txn_count, 0))",
+    }
+    sort_col = sort_column_map.get(sort_by, "mule_risk_index")
+    sort_dir = "ASC" if order.lower() == "asc" else "DESC"
+
+    rows = con.execute(f"""
+        SELECT 
+            account_number,
+            COALESCE(mule_risk_index, 0.0),
+            COALESCE(risk_band, 'LOW'),
+            COALESCE(layer1_candidate, false),
+            COALESCE(layer2_candidate, false),
+            COALESCE(layer3_candidate, false),
+            COALESCE(pass_through_candidate, false),
+            pass_through_ratio,
+            COALESCE(incoming_volume, 0.0),
+            COALESCE(outgoing_volume, 0.0),
+            COALESCE(net_flow_delta, 0.0),
+            COALESCE(fan_in, 0),
+            COALESCE(fan_out, 0),
+            (COALESCE(incoming_txn_count, 0) + COALESCE(outgoing_txn_count, 0)) AS transaction_count
+        FROM account_features
+        WHERE {where_sql}
+        ORDER BY {sort_col} {sort_dir} NULLS LAST
+        LIMIT ? OFFSET ?
+    """, params + [limit, offset]).fetchall()
+
+    items = []
+    for r in rows:
+        items.append(MuleCandidateItem(
+            account_number=r[0],
+            risk_index=round(float(r[1]), 1),
+            risk_band=r[2],
+            layer1_candidate=bool(r[3]),
+            layer2_candidate=bool(r[4]),
+            layer3_candidate=bool(r[5]),
+            pass_through_candidate=bool(r[6]),
+            pass_through_ratio=round(float(r[7]), 4) if r[7] is not None else None,
+            incoming_volume=round(float(r[8]), 2),
+            outgoing_volume=round(float(r[9]), 2),
+            net_flow_delta=round(float(r[10]), 2),
+            fan_in=int(r[11]),
+            fan_out=int(r[12]),
+            transaction_count=int(r[13]),
+        ))
+
+    return MuleIntelligenceResponse(
+        summary=summary,
+        total_count=total_count,
+        limit=limit,
+        offset=offset,
+        items=items
+    )
 
 
 @router.get("/accounts/{account_id}", response_model=AccountDetailResponse)

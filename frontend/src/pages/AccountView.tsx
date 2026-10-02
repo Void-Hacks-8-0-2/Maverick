@@ -214,76 +214,76 @@ export const AccountView: React.FC = () => {
         </div>
       </div>
 
-      {/* Financial Movement Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Financial Movement Metrics Dossier */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
         {/* Inflow */}
-        <div className="bg-[#0b0f19] border border-slate-800 p-5 rounded-xl space-y-2">
+        <div className="surface-l2 border border-white/[0.06] p-4.5 rounded-xl space-y-1.5">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-mono">OBSERVED INFLOW</span>
+            <span className="text-[10px] font-mono tracking-wider uppercase">OBSERVED INFLOW</span>
             <ArrowDownLeft className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-bold font-mono text-emerald-400">
+          <div className="text-xl sm:text-2xl font-semibold font-mono text-emerald-400 tabular-nums">
             ₹{detail.observed_inflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </div>
-          <div className="text-[11px] text-slate-500 font-mono">
+          <div className="text-[10px] text-slate-400 font-mono">
             {detail.inbound_transaction_count} inbound transactions from {detail.unique_senders} unique senders
           </div>
         </div>
 
         {/* Outflow */}
-        <div className="bg-[#0b0f19] border border-slate-800 p-5 rounded-xl space-y-2">
+        <div className="surface-l2 border border-white/[0.06] p-4.5 rounded-xl space-y-1.5">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-mono">OBSERVED OUTFLOW</span>
+            <span className="text-[10px] font-mono tracking-wider uppercase">OBSERVED OUTFLOW</span>
             <ArrowUpRight className="w-4 h-4 text-rose-400" />
           </div>
-          <div className="text-2xl font-bold font-mono text-rose-400">
+          <div className="text-xl sm:text-2xl font-semibold font-mono text-rose-400 tabular-nums">
             ₹{detail.observed_outflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </div>
-          <div className="text-[11px] text-slate-500 font-mono">
+          <div className="text-[10px] text-slate-400 font-mono">
             {detail.outbound_transaction_count} outbound transactions to {detail.unique_receivers} unique receivers
           </div>
         </div>
 
-        {/* Net Movement */}
-        <div className="bg-[#0b0f19] border border-slate-800 p-5 rounded-xl space-y-2">
+        {/* Net Flow Delta */}
+        <div className="surface-l2 border border-white/[0.06] p-4.5 rounded-xl space-y-1.5">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-mono">DATASET-OBSERVED NET MOVEMENT</span>
+            <span className="text-[10px] font-mono tracking-wider font-semibold uppercase">OBSERVED NET FLOW DELTA</span>
             {detail.dataset_observed_net_movement >= 0 ? (
               <TrendingUp className="w-4 h-4 text-emerald-400" />
             ) : (
               <TrendingDown className="w-4 h-4 text-rose-400" />
             )}
           </div>
-          <div className={`text-2xl font-bold font-mono ${detail.dataset_observed_net_movement >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+          <div className={`text-xl sm:text-2xl font-semibold font-mono tabular-nums ${detail.dataset_observed_net_movement >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
             {detail.dataset_observed_net_movement >= 0 ? '+' : ''}
             ₹{detail.dataset_observed_net_movement.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </div>
-          <div className="text-[10px] text-slate-500 font-mono">
+          <div className="text-[10px] text-slate-400 font-mono">
             *Observed in sample (not full bank balance)
           </div>
         </div>
       </div>
 
       {/* Associated Metadata (IFSC, IP, Payment Modes) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
         {/* Payment Modes */}
-        <div className="bg-[#0b0f19] border border-slate-800 p-4 rounded-xl space-y-2">
-          <span className="text-xs font-mono text-slate-400 uppercase">Payment Modes</span>
-          <div className="flex flex-wrap gap-2 pt-1">
+        <div className="surface-l1 border border-white/[0.06] p-4 rounded-xl space-y-2">
+          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Payment Modes</span>
+          <div className="flex flex-wrap gap-1.5 pt-1">
             {Object.entries(detail.payment_mode_distribution).map(([pm, cnt]) => (
-              <span key={pm} className="bg-slate-900 border border-slate-700/80 px-2.5 py-1 rounded text-xs font-mono text-slate-200">
-                <span className="text-cyan-400 font-bold">{pm}</span>: {cnt}
+              <span key={pm} className="bg-[#06080d]/80 border border-white/[0.06] px-2 py-0.5 rounded text-xs font-mono text-slate-200">
+                <span className="text-cyan-300 font-semibold">{pm}</span>: {cnt}
               </span>
             ))}
           </div>
         </div>
 
         {/* Observed IFSCs */}
-        <div className="bg-[#0b0f19] border border-slate-800 p-4 rounded-xl space-y-2">
-          <span className="text-xs font-mono text-slate-400 uppercase">Observed IFSC Codes</span>
-          <div className="flex flex-wrap gap-1.5 pt-1">
+        <div className="surface-l1 border border-white/[0.06] p-4 rounded-xl space-y-2">
+          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Observed IFSC Codes</span>
+          <div className="flex flex-wrap gap-1 pt-1">
             {detail.associated_ifscs.map((ifsc) => (
-              <span key={ifsc} className="bg-slate-900 border border-slate-800 text-slate-300 font-mono text-[11px] px-2 py-0.5 rounded">
+              <span key={ifsc} className="bg-[#06080d]/80 border border-white/[0.06] text-slate-300 font-mono text-[10px] px-2 py-0.5 rounded">
                 {ifsc}
               </span>
             ))}
@@ -291,11 +291,11 @@ export const AccountView: React.FC = () => {
         </div>
 
         {/* Observed IPs */}
-        <div className="bg-[#0b0f19] border border-slate-800 p-4 rounded-xl space-y-2">
-          <span className="text-xs font-mono text-slate-400 uppercase">Observed IP Endpoints</span>
-          <div className="flex flex-wrap gap-1.5 pt-1 max-h-24 overflow-y-auto">
+        <div className="surface-l1 border border-white/[0.06] p-4 rounded-xl space-y-2">
+          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Observed IP Endpoints</span>
+          <div className="flex flex-wrap gap-1 pt-1 max-h-24 overflow-y-auto">
             {detail.associated_ips.map((ip) => (
-              <span key={ip} className="bg-slate-900 border border-slate-800 text-slate-300 font-mono text-[11px] px-2 py-0.5 rounded">
+              <span key={ip} className="bg-[#06080d]/80 border border-white/[0.06] text-slate-300 font-mono text-[10px] px-2 py-0.5 rounded">
                 {ip}
               </span>
             ))}
@@ -305,8 +305,8 @@ export const AccountView: React.FC = () => {
 
       {/* Step 5B Explainable 0-100 Mule Risk Index */}
       {risk && (
-        <div className="bg-[#0b0f19] border border-slate-800 rounded-xl p-5 space-y-5 shadow-xl font-mono">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-800/80 pb-3">
+        <div className="surface-l2 border border-white/[0.06] rounded-xl p-5 space-y-4 shadow-xl font-mono">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-white/[0.06] pb-3">
             <div className="flex items-center space-x-2">
               <ShieldAlert className="w-5 h-5 text-cyan-400" />
               <div className="flex items-center space-x-2.5">

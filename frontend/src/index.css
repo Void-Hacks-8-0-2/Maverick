@@ -1,14 +1,35 @@
 @import "tailwindcss";
 
+:root {
+  --canvas: #05070a;
+  --surface-0: #05070a;
+  --surface-1: #0a0e14;
+  --surface-2: #0e131a;
+  --surface-3: #121820;
+  --surface-4: #18202b;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-medium: rgba(255, 255, 255, 0.10);
+  --border-cyan: rgba(0, 217, 255, 0.25);
+  --accent-cyan: #00d9ff;
+  --accent-sky: #38bdf8;
+  --accent-blue: #0284c7;
+  --semantic-rose: #f43f5e;
+  --semantic-amber: #f59e0b;
+  --semantic-emerald: #10b981;
+  --semantic-violet: #8b5cf6;
+}
+
 @layer base {
   body {
-    background-color: #080c14;
-    color: #e2e8f0;
+    background-color: #05070a;
+    color: #f1f5f9;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     margin: 0;
     padding: 0;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
   }
 
   code, pre, .font-mono {
@@ -16,17 +37,77 @@
   }
 }
 
+/* Institutional Atmospheric Canvas */
+.atmospheric-canvas {
+  background-color: #05070a;
+  background-image: 
+    radial-gradient(1200px 600px at 50% -10%, rgba(0, 217, 255, 0.04), transparent 80%),
+    radial-gradient(1000px 700px at 100% 100%, rgba(139, 92, 246, 0.025), transparent 75%),
+    radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 40px 40px;
+  background-position: 0 0, 0 0, 0 0;
+  background-attachment: fixed;
+}
+
+/* Technical Forensic Vignette */
+.technical-vignette {
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.85);
+}
+
+/* Institutional Surfaces */
+.surface-panel {
+  background-color: #0a0e14;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.surface-card {
+  background-color: #0e131a;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.surface-elevated {
+  background-color: #121820;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.7);
+}
+
+/* Hairline borders */
+.border-hairline {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.border-hairline-t {
+  border-top-color: rgba(255, 255, 255, 0.06);
+}
+
+.border-hairline-b {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+.border-hairline-r {
+  border-right-color: rgba(255, 255, 255, 0.06);
+}
+
+.border-hairline-l {
+  border-left-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Forensic typography helpers */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Custom forensic scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #0b0f19;
+  background: #070a12;
 }
 ::-webkit-scrollbar-thumb {
   background: #1e293b;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;

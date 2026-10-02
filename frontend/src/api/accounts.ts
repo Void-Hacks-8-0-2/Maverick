@@ -16,7 +16,8 @@ import type {
   GenerateNarrativeRequest,
   LegalDraftRequest,
   LegalDraftResponse,
-  LegalDraftPackage
+  LegalDraftPackage,
+  MuleIntelligenceResponse
 } from '../types';
 
 export function searchAccounts(q: string, limit: number = 20): Promise<AccountSearchItem[]> {
@@ -138,6 +139,29 @@ export function listLegalDrafts(accountNumber?: string): Promise<LegalDraftPacka
   if (accountNumber) params.set('account_number', accountNumber);
   const query = params.toString() ? `?${params.toString()}` : '';
   return apiRequest<LegalDraftPackage[]>(`/legal-freeze/drafts${query}`);
+}
+
+export function getMuleIntelligence(params: {
+  role?: string;
+  risk_band?: string;
+  velocity_only?: boolean;
+  min_risk?: number;
+  sort_by?: string;
+  order?: string;
+  limit?: number;
+  offset?: number;
+} = {}): Promise<MuleIntelligenceResponse> {
+  const query = new URLSearchParams();
+  if (params.role) query.set('role', params.role);
+  if (params.risk_band) query.set('risk_band', params.risk_band);
+  if (params.velocity_only) query.set('velocity_only', 'true');
+  if (params.min_risk !== undefined) query.set('min_risk', params.min_risk.toString());
+  if (params.sort_by) query.set('sort_by', params.sort_by);
+  if (params.order) query.set('order', params.order);
+  if (params.limit !== undefined) query.set('limit', params.limit.toString());
+  if (params.offset !== undefined) query.set('offset', params.offset.toString());
+  const qStr = query.toString() ? `?${query.toString()}` : '';
+  return apiRequest<MuleIntelligenceResponse>(`/mules${qStr}`);
 }
 
 

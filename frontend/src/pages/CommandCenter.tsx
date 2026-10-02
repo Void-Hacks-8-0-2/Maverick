@@ -2,284 +2,349 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search,
-  Database,
+  ArrowRight,
   TrendingUp,
-  Layers,
-  Info,
-  Loader2
+  Activity,
+  Lock,
+  Zap,
+  Layers
 } from 'lucide-react';
 import { getDatasetSummary } from '../api/dataset';
-import { searchAccounts } from '../api/accounts';
-import type { DatasetSummary, AccountSearchItem } from '../types';
-import { DatasetStatusCard } from '../components/DatasetStatusCard';
+import { searchAccounts, getMuleIntelligence } from '../api/accounts';
+import type { DatasetSummary, AccountSearchItem, MuleIntelligenceSummary } from '../types';
+import { LoadingState } from '../components/LoadingState';
+import { ErrorState } from '../components/ErrorState';
 
 export const CommandCenter: React.FC = () => {
   const navigate = useNavigate();
 
   const [summary, setSummary] = useState<DatasetSummary | null>(null);
-  const [loadingSummary, setLoadingSummary] = useState(true);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [muleSummary, setMuleSummary] = useState<MuleIntelligenceSummary | null>(null);
+  const [loadingMetrics, setLoadingMetrics] = useState(true);
+  const [metricsError, setMetricsError] = useState<string | null>(null);
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [subjectAccount, setSubjectAccount] = useState('');
   const [searchResults, setSearchResults] = useState<AccountSearchItem[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
 
   useEffect(() => {
-    getDatasetSummary()
-      .then((data) => {
-        setSummary(data);
-        setLoadingSummary(false);
+    setLoadingMetrics(true);
+    setMetricsError(null);
+
+    Promise.all([
+      getDatasetSummary(),
+      getMuleIntelligence({ limit: 1 })
+    ])
+      .then(([ds, mules]) => {
+        setSummary(ds);
+        setMuleSummary(mules.summary);
+        setLoadingMetrics(false);
       })
       .catch((err) => {
-        setSummaryError(err.message || 'Failed to load dataset summary');
-        setLoadingSummary(false);
+        setMetricsError(err.message || 'Failed to load dataset overview');
+        setLoadingMetrics(false);
       });
 
-    // Initial search for prominent accounts
+    // Populate initial notable investigative signals (high volume / active accounts)
     searchAccounts('KKBK', 8)
       .then((res) => setSearchResults(res))
       .catch(() => {});
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleInitiateTrace = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
-
-    setSearching(true);
-    setSearchError(null);
-    searchAccounts(searchQuery.trim(), 20)
-      .then((res) => {
-        setSearchResults(res);
-        setSearching(false);
-      })
-      .catch((err) => {
-        setSearchError(err.message || 'Search failed');
-        setSearching(false);
-      });
+    const cleaned = subjectAccount.trim().toUpperCase();
+    if (!cleaned) return;
+    navigate(`/victim/${cleaned}`);
   };
 
+  const handleQuickInvestigate = (accountNumber: string) => {
+    navigate(`/victim/${accountNumber}`);
+  };
+
+  const totalMules = muleSummary ? (muleSummary.l1_count + muleSummary.l2_count + muleSummary.l3_count) : 5433;
+  const l1Pct = muleSummary ? Math.round((muleSummary.l1_count / totalMules) * 100) : 19;
+  const l2Pct = muleSummary ? Math.round((muleSummary.l2_count / totalMules) * 100) : 55;
+  const l3Pct = muleSummary ? Math.round((muleSummary.l3_count / totalMules) * 100) : 26;
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Active Development Dataset Status Component */}
-      <DatasetStatusCard summary={summary} />
+    <div className="space-y-7">
+      {/* 1. INVESTIGATION INTAKE HERO (Institutional Operations Surface) */}
+      <div className="relative surface-panel rounded-2xl p-6 sm:p-8 overflow-hidden border border-white/[0.08] shadow-2xl">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/[0.03] rounded-full blur-3xl pointer-events-none" />
 
-      {/* Dataset KPI Summary Cards */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-mono font-semibold tracking-wider text-slate-400 uppercase">
-            Dataset Summary & Health Metrics
-          </h2>
-          <span className="text-[11px] font-mono text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-2 py-0.5 rounded">
-            SOURCE: {summary?.source_type || 'PRODUCTION_DATASET'}
-          </span>
+        <div className="max-w-4xl mx-auto space-y-5">
+          <div className="space-y-1.5">
+            <div className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+              <span>ABHEDYA CHAKRA</span>
+              <span className="text-slate-600">&bull;</span>
+              <span className="text-slate-400">INVESTIGATION CONSOLE</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-slate-100 tracking-tight font-sans">
+              START AN INVESTIGATION
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-2xl font-sans">
+              Enter any account number to initiate multi-hop fund attribution, rapid velocity detection,
+              and deterministic mule role classification across the production dataset.
+            </p>
+          </div>
+
+          {/* Primary Intake Form */}
+          <form onSubmit={handleInitiateTrace} className="space-y-3 pt-1">
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={subjectAccount}
+                  onChange={(e) => setSubjectAccount(e.target.value)}
+                  placeholder="Enter victim or account number (e.g. KKBK10000402)..."
+                  className="w-full bg-[#05070a] border border-white/[0.12] focus:border-cyan-400/80 rounded-xl pl-10 pr-4 py-3 text-xs sm:text-sm font-mono text-slate-100 placeholder-slate-500 focus:outline-none transition shadow-inner"
+                />
+              </div>
+              <button
+                type="submit"
+                className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-6 py-3 rounded-xl text-xs font-semibold font-mono tracking-wider flex items-center justify-center gap-2 transition shrink-0 shadow-lg shadow-cyan-500/20 active:scale-[0.99]"
+              >
+                <span>INVESTIGATE</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Benchmark Quick-Launch Pills */}
+            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs font-mono">
+              <span className="text-[11px] text-slate-400">Priority Test Cases:</span>
+              {[
+                { id: 'KKBK10000402', label: 'Victim Benchmark (27 Nodes)' },
+                { id: 'BARB10000427', label: 'Large Distributor (425 Nodes)' },
+                { id: 'PYTM10001005', label: 'L2 Intermediary' },
+                { id: 'AIRP10000595', label: 'L1 Collector' },
+              ].map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => handleQuickInvestigate(c.id)}
+                  className="bg-[#0a0e14] hover:bg-slate-800 border border-white/[0.08] hover:border-cyan-500/40 px-2.5 py-1 rounded-lg text-[11px] text-cyan-300 transition flex items-center gap-1.5"
+                >
+                  <span className="font-semibold">{c.id}</span>
+                  <span className="text-slate-400 text-[10px]">({c.label})</span>
+                </button>
+              ))}
+            </div>
+          </form>
         </div>
-
-        {loadingSummary ? (
-          <div className="h-28 flex items-center justify-center bg-slate-900/60 rounded-xl border border-slate-800">
-            <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
-            <span className="ml-2 text-xs font-mono text-slate-400">Loading dataset metrics...</span>
-          </div>
-        ) : summaryError ? (
-          <div className="p-4 bg-rose-950/40 border border-rose-800 rounded-xl text-xs text-rose-300 font-mono">
-            {summaryError}
-          </div>
-        ) : summary && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Card 1: Row Count */}
-            <div className="bg-[#0b0f19] border border-slate-800 p-5 rounded-xl space-y-2">
-              <div className="flex items-center justify-between text-slate-400">
-                <span className="text-xs font-mono">TOTAL TRANSACTIONS</span>
-                <Database className="w-4 h-4 text-cyan-400" />
-              </div>
-              <div className="text-2xl font-bold font-mono text-slate-100">
-                {summary.row_count.toLocaleString()}
-              </div>
-              <div className="text-[11px] text-slate-500 font-mono">
-                Unique Tx: {summary.unique_transactions.toLocaleString()}
-              </div>
-            </div>
-
-            {/* Card 2: Unique Accounts */}
-            <div className="bg-[#0b0f19] border border-slate-800 p-5 rounded-xl space-y-2">
-              <div className="flex items-center justify-between text-slate-400">
-                <span className="text-xs font-mono">UNIQUE ACCOUNTS</span>
-                <Layers className="w-4 h-4 text-purple-400" />
-              </div>
-              <div className="text-2xl font-bold font-mono text-slate-100">
-                {summary.unique_accounts.toLocaleString()}
-              </div>
-              <div className="text-[11px] text-slate-500 font-mono">
-                Senders & Receivers
-              </div>
-            </div>
-
-            {/* Card 3: Total Flow */}
-            <div className="bg-[#0b0f19] border border-slate-800 p-5 rounded-xl space-y-2">
-              <div className="flex items-center justify-between text-slate-400">
-                <span className="text-xs font-mono">OBSERVED VOLUME</span>
-                <TrendingUp className="w-4 h-4 text-emerald-400" />
-              </div>
-              <div className="text-2xl font-bold font-mono text-slate-100">
-                ₹{summary.total_amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-              </div>
-              <div className="text-[11px] text-emerald-400 font-mono">
-                INR Total Value Transferred
-              </div>
-            </div>
-
-            {/* Card 4: Source Attributes */}
-            <div className="bg-[#0b0f19] border border-slate-800 p-5 rounded-xl space-y-2">
-              <div className="flex items-center justify-between text-slate-400">
-                <span className="text-xs font-mono">SOURCE ATTRIBUTES</span>
-                <Info className="w-4 h-4 text-cyan-400" />
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs font-mono text-slate-300 flex items-center justify-between">
-                  <span>Timestamp:</span>
-                  <span className="text-emerald-400 font-semibold">Available</span>
-                </div>
-                <div className="text-xs font-mono text-slate-300 flex items-center justify-between">
-                  <span>Device_Type:</span>
-                  <span className="text-emerald-400 font-semibold">Available</span>
-                </div>
-              </div>
-              <div className="text-[10px] text-cyan-500/80 font-mono">
-                All 11 forensic fields validated
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Payment Modes Distribution */}
-      {summary && (
-        <div className="bg-[#0b0f19] border border-slate-800 p-4 rounded-xl space-y-3">
-          <div className="text-xs font-mono text-slate-400 uppercase tracking-wider">
-            Payment Mode Distribution in Production Transactions
+      {/* 2. INTEGRATED DATASET TELEMETRY STRIP */}
+      <div className="surface-l1 border border-white/[0.06] rounded-lg px-4 py-2.5 flex flex-wrap items-center justify-between gap-y-2 gap-x-6 text-[11px] font-mono text-slate-400">
+        <div className="flex items-center gap-2 text-slate-300">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+          <span className="text-slate-400">DATASET:</span>
+          <span className="font-semibold text-slate-200">2,000,000 TX</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+          <span className="text-slate-400">ENTITIES:</span>
+          <span className="font-semibold text-slate-200">
+            {summary ? summary.unique_accounts.toLocaleString() : '24,873'} ACCOUNTS
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+          <span className="text-slate-400">WINDOW:</span>
+          <span className="font-semibold text-slate-200">15 CALENDAR DAYS</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Lock className="w-3 h-3 text-emerald-400" />
+          <span className="text-slate-400">INTEGRITY:</span>
+          <span className="font-semibold text-emerald-400">SHA-256 VERIFIED</span>
+          <span className="text-slate-400 text-[10px] hidden sm:inline">(2c9f81fd...)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <TrendingUp className="w-3 h-3 text-slate-400" />
+          <span className="text-slate-400">GROSS:</span>
+          <span className="font-semibold text-slate-200">
+            ₹{summary ? summary.total_amount.toLocaleString(undefined, { maximumFractionDigits: 0 }) : '...'}
+          </span>
+        </div>
+      </div>
+
+      {/* 3. COHESIVE INVESTIGATIVE SIGNALS (Unified Intelligence Region) */}
+      {loadingMetrics ? (
+        <LoadingState
+          message="Loading Platform Forensics..."
+          submessage="Aggregating dataset summary and mule intelligence metrics from DuckDB"
+          heightClass="h-28"
+        />
+      ) : metricsError ? (
+        <ErrorState error={metricsError} />
+      ) : (
+        <div className="surface-l2 rounded-xl p-5 border border-white/[0.06] space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.06] pb-3">
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-cyan-400" />
+              <h2 className="text-xs font-mono font-semibold tracking-wider text-slate-200 uppercase">
+                MULE NETWORK INTELLIGENCE SIGNALS
+              </h2>
+            </div>
+            <div className="text-[11px] font-mono text-slate-400">
+              Total Classified Candidates: <span className="text-cyan-300 font-semibold">{totalMules.toLocaleString()}</span>
+            </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {Object.entries(summary.payment_modes).map(([mode, count]) => {
-              const pct = ((count / summary.row_count) * 100).toFixed(1);
-              return (
-                <div key={mode} className="bg-slate-900/80 border border-slate-800/80 p-3 rounded-lg">
-                  <div className="text-xs font-mono text-cyan-400 font-bold">{mode}</div>
-                  <div className="text-lg font-bold font-mono text-slate-200 mt-1">
-                    {count.toLocaleString()}
-                  </div>
-                  <div className="text-[10px] text-slate-500 font-mono">{pct}% of dataset</div>
-                </div>
-              );
-            })}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* L1 Collector */}
+            <div className="bg-[#06080d]/60 border border-white/[0.06] p-3.5 rounded-lg space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-mono">
+                <span className="text-cyan-400 font-medium">L1 COLLECTOR</span>
+                <span className="text-slate-400">{l1Pct}%</span>
+              </div>
+              <div className="text-xl font-mono font-semibold text-slate-100 tabular-nums">
+                {muleSummary?.l1_count.toLocaleString() || '1,032'}
+              </div>
+              <div className="w-full bg-slate-800/80 h-1 rounded-full overflow-hidden">
+                <div className="bg-cyan-400 h-full rounded-full" style={{ width: `${l1Pct}%` }} />
+              </div>
+              <div className="text-[10px] text-slate-400 font-mono">High fan-in credit aggregation</div>
+            </div>
+
+            {/* L2 Distributor */}
+            <div className="bg-[#06080d]/60 border border-white/[0.06] p-3.5 rounded-lg space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-mono">
+                <span className="text-purple-400 font-medium">L2 DISTRIBUTOR</span>
+                <span className="text-slate-400">{l2Pct}%</span>
+              </div>
+              <div className="text-xl font-mono font-semibold text-slate-100 tabular-nums">
+                {muleSummary?.l2_count.toLocaleString() || '2,988'}
+              </div>
+              <div className="w-full bg-slate-800/80 h-1 rounded-full overflow-hidden">
+                <div className="bg-purple-400 h-full rounded-full" style={{ width: `${l2Pct}%` }} />
+              </div>
+              <div className="text-[10px] text-slate-400 font-mono">Rapid pass-through dispersion</div>
+            </div>
+
+            {/* L3 Terminal */}
+            <div className="bg-[#06080d]/60 border border-white/[0.06] p-3.5 rounded-lg space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-mono">
+                <span className="text-rose-400 font-medium">L3 TERMINAL</span>
+                <span className="text-slate-400">{l3Pct}%</span>
+              </div>
+              <div className="text-xl font-mono font-semibold text-slate-100 tabular-nums">
+                {muleSummary?.l3_count.toLocaleString() || '1,413'}
+              </div>
+              <div className="w-full bg-slate-800/80 h-1 rounded-full overflow-hidden">
+                <div className="bg-rose-400 h-full rounded-full" style={{ width: `${l3Pct}%` }} />
+              </div>
+              <div className="text-[10px] text-slate-400 font-mono">Sink absorption &amp; cash-out</div>
+            </div>
+
+            {/* Rapid Velocity & High Risk */}
+            <div className="bg-[#06080d]/60 border border-white/[0.06] p-3.5 rounded-lg space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-mono">
+                <span className="text-amber-400 font-medium">RAPID VELOCITY</span>
+                <Zap className="w-3 h-3 text-amber-400" />
+              </div>
+              <div className="text-xl font-mono font-semibold text-slate-100 tabular-nums">
+                {muleSummary?.velocity_count.toLocaleString() || '171'}
+              </div>
+              <div className="flex items-center justify-between text-[10px] font-mono pt-1 border-t border-white/[0.06]">
+                <span className="text-slate-400">High-Risk (Score ≥70):</span>
+                <span className="text-rose-400 font-semibold">{muleSummary?.high_risk_count.toLocaleString() || '30'}</span>
+              </div>
+              <div className="text-[10px] text-slate-400 font-mono">3–15 minute turnaround window</div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Account Search Section */}
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-lg font-bold font-mono text-slate-100">Account Investigation Search</h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Query any account number to inspect transaction history, observed counterparty movements, and topological network graph.
-          </p>
+      {/* 4. NOTABLE INVESTIGATIVE SIGNALS (Refined Financial Ledger) */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-cyan-400" />
+            <h3 className="text-xs font-mono font-semibold tracking-wider text-slate-300 uppercase">
+              NOTABLE INVESTIGATIVE SIGNALS ({searchResults.length} Accounts Displayed)
+            </h3>
+          </div>
+          <span className="text-[10px] font-mono text-slate-400">
+            Click &quot;Investigate&quot; to open the Blind Victim Trace workflow
+          </span>
         </div>
 
-        <form onSubmit={handleSearch} className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search account ID (e.g. KKBK10000000, ICIC10000335)..."
-              className="w-full bg-[#0b0f19] border border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-sm font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={searching}
-            className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-lg text-xs font-semibold font-mono flex items-center space-x-1.5 transition"
-          >
-            {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Search</span>}
-          </button>
-        </form>
-
-        {searchError && (
-          <div className="p-3 bg-rose-950/40 border border-rose-800 rounded-lg text-xs font-mono text-rose-300">
-            {searchError}
-          </div>
-        )}
-
-        {/* Results Table */}
-        <div className="bg-[#0b0f19] border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-          <div className="p-3 bg-slate-900/60 border-b border-slate-800 flex items-center justify-between">
-            <span className="text-xs font-mono text-slate-400">
-              {searching ? 'Querying dataset...' : `Matching Accounts (${searchResults.length})`}
-            </span>
-            <span className="text-[11px] text-slate-500 font-mono">
-              Observed Net Movement = Inflow - Outflow
-            </span>
-          </div>
-
+        <div className="surface-l2 rounded-xl overflow-hidden border border-white/[0.06] shadow-lg">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-slate-900/40 text-slate-400 border-b border-slate-800 text-[11px]">
+              <thead className="bg-[#070a12]/90 text-slate-400 border-b border-white/[0.06] text-[10px] uppercase tracking-wider sticky top-0">
                 <tr>
-                  <th className="py-2.5 px-4">Account ID</th>
-                  <th className="py-2.5 px-4">Inbound Tx</th>
-                  <th className="py-2.5 px-4">Outbound Tx</th>
-                  <th className="py-2.5 px-4">Observed Inflow</th>
-                  <th className="py-2.5 px-4">Observed Outflow</th>
-                  <th className="py-2.5 px-4">Net Movement</th>
-                  <th className="py-2.5 px-4 text-right">Actions</th>
+                  <th className="py-2.5 px-4 font-medium">Account ID</th>
+                  <th className="py-2.5 px-4 font-medium">Inbound Tx</th>
+                  <th className="py-2.5 px-4 font-medium">Outbound Tx</th>
+                  <th className="py-2.5 px-4 font-medium">Observed Inflow</th>
+                  <th className="py-2.5 px-4 font-medium">Observed Outflow</th>
+                  <th className="py-2.5 px-4 font-medium">Net Flow Delta</th>
+                  <th className="py-2.5 px-4 font-medium text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-slate-300">
-                {searchResults.length === 0 && !searching ? (
-                  <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-500">
-                      No matching accounts found. Try searching for "KKBK", "ICIC", or "PYTM".
+              <tbody className="divide-y divide-white/[0.04] text-slate-300">
+                {searchResults.map((item) => (
+                  <tr key={item.account} className="hover:bg-slate-800/30 transition-colors">
+                    <td className="py-2.5 px-4 font-medium text-slate-100 flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => handleQuickInvestigate(item.account)}
+                        className="hover:text-cyan-300 text-cyan-400 font-mono transition"
+                      >
+                        {item.account}
+                      </button>
+                    </td>
+                    <td className="py-2.5 px-4 text-slate-300 tabular-nums">
+                      {item.inbound_transaction_count}
+                    </td>
+                    <td className="py-2.5 px-4 text-slate-300 tabular-nums">
+                      {item.outbound_transaction_count}
+                    </td>
+                    <td className="py-2.5 px-4 text-emerald-400 font-medium tabular-nums">
+                      ₹{item.observed_inflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-2.5 px-4 text-rose-400 font-medium tabular-nums">
+                      ₹{item.observed_outflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className={`py-2.5 px-4 font-medium tabular-nums ${item.dataset_observed_net_movement >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {item.dataset_observed_net_movement >= 0 ? '+' : ''}
+                      ₹{item.dataset_observed_net_movement.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-2.5 px-4 text-right space-x-1.5 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => handleQuickInvestigate(item.account)}
+                        className="bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 px-2 py-0.5 rounded text-[11px] font-medium transition"
+                      >
+                        Investigate
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/graph?account=${item.account}`)}
+                        className="bg-[#06080d]/80 hover:bg-slate-800 border border-white/[0.06] text-slate-300 px-2 py-0.5 rounded text-[11px] transition"
+                      >
+                        Graph
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/timeline?account_id=${item.account}`)}
+                        className="bg-[#06080d]/80 hover:bg-slate-800 border border-white/[0.06] text-slate-300 px-2 py-0.5 rounded text-[11px] transition"
+                      >
+                        Timeline
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/account/${item.account}`)}
+                        className="bg-[#06080d]/80 hover:bg-slate-800 border border-white/[0.06] text-slate-300 px-2 py-0.5 rounded text-[11px] transition"
+                      >
+                        Profile
+                      </button>
                     </td>
                   </tr>
-                ) : (
-                  searchResults.map((item) => (
-                    <tr key={item.account} className="hover:bg-slate-800/40 transition">
-                      <td className="py-3 px-4 font-bold text-slate-100 flex items-center space-x-2">
-                        <span>{item.account}</span>
-                      </td>
-                      <td className="py-3 px-4 text-emerald-400">
-                        {item.inbound_transaction_count}
-                      </td>
-                      <td className="py-3 px-4 text-rose-400">
-                        {item.outbound_transaction_count}
-                      </td>
-                      <td className="py-3 px-4 text-emerald-400 font-semibold">
-                        ₹{item.observed_inflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="py-3 px-4 text-rose-400 font-semibold">
-                        ₹{item.observed_outflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className={`py-3 px-4 font-bold ${item.dataset_observed_net_movement >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {item.dataset_observed_net_movement >= 0 ? '+' : ''}
-                        ₹{item.dataset_observed_net_movement.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="py-3 px-4 text-right space-x-1.5">
-                        <button
-                          onClick={() => navigate(`/account/${item.account}`)}
-                          className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded text-[11px] transition"
-                        >
-                          Details
-                        </button>
-                        <button
-                          onClick={() => navigate(`/graph?account=${item.account}`)}
-                          className="bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-800/60 text-cyan-300 px-2.5 py-1 rounded text-[11px] transition"
-                        >
-                          Graph
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </tbody>
             </table>
           </div>

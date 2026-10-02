@@ -13,7 +13,7 @@ from backend.detection.thresholds import (
     DEFAULT_THRESHOLDS,
     DEFAULT_VELOCITY_THRESHOLDS,
 )
-from backend.detection.role_classifier import classify_account_roles
+from backend.detection.role_classifier import classify_account_roles, get_account_role, AccountRoleResult
 from backend.detection.velocity_detector import compute_velocity_features, get_velocity_events
 
 __all__ = [
@@ -25,6 +25,8 @@ __all__ = [
     "DEFAULT_THRESHOLDS",
     "DEFAULT_VELOCITY_THRESHOLDS",
     "classify_account_roles",
+    "get_account_role",
+    "AccountRoleResult",
     "compute_velocity_features",
     "get_velocity_events",
 ]

@@ -17,6 +17,8 @@ if str(project_root) not in sys.path:
 from backend.db.connection import get_db, get_dataset_path
 from backend.api.routes import router
 from backend.legal_freeze.routes import router as legal_freeze_router
+from backend.timeline.routes import router as timeline_router
+from backend.transactions.routes import router as transactions_router
 
 
 @asynccontextmanager
@@ -51,6 +53,8 @@ app.add_middleware(
 # Mount API routes under /api
 app.include_router(router, prefix="/api")
 app.include_router(legal_freeze_router)
+app.include_router(timeline_router, prefix="/api")
+app.include_router(transactions_router, prefix="/api")
 
 
 @app.get("/")

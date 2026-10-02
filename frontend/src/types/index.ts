@@ -60,11 +60,14 @@ export interface GraphNode {
   type: string;
   is_root?: boolean;
   hop?: number;
+  role?: string;
+  is_terminal?: boolean;
   x?: number;
   y?: number;
   size?: number;
   color?: string;
   label?: string;
+  [key: string]: any;
 }
 
 export interface GraphEdge {
@@ -73,11 +76,13 @@ export interface GraphEdge {
   target: string;
   transaction_id: string;
   amount: number;
+  attributed_amount?: number;
   payment_mode: string;
   narration?: string;
   ip_address?: string;
   size?: number;
   color?: string;
+  [key: string]: any;
 }
 
 export interface GraphData {
@@ -917,5 +922,36 @@ export interface LegalDraftResponse {
   disclaimer: string;
 }
 
+export interface MuleCandidateItem {
+  account_number: string;
+  risk_index: number;
+  risk_band: 'LOW' | 'MODERATE' | 'HIGH' | 'VERY_HIGH' | string;
+  layer1_candidate: boolean;
+  layer2_candidate: boolean;
+  layer3_candidate: boolean;
+  pass_through_candidate: boolean;
+  pass_through_ratio: number | null;
+  incoming_volume: number;
+  outgoing_volume: number;
+  net_flow_delta: number;
+  fan_in: number;
+  fan_out: number;
+  transaction_count: number;
+}
 
+export interface MuleIntelligenceSummary {
+  total_accounts: number;
+  l1_count: number;
+  l2_count: number;
+  l3_count: number;
+  high_risk_count: number;
+  velocity_count: number;
+}
 
+export interface MuleIntelligenceResponse {
+  summary: MuleIntelligenceSummary;
+  total_count: number;
+  limit: number;
+  offset: number;
+  items: MuleCandidateItem[];
+}

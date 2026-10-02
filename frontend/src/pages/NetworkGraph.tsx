@@ -82,32 +82,32 @@ export const NetworkGraph: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="space-y-6">
       {/* Header and Controls */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-white/[0.06]">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider">
-              {mode === 'ego' ? 'Structural Topology Graph' : '4-Hop Deterministic Trace'}
+            <span className="text-[10px] font-mono text-cyan-400 font-medium uppercase tracking-widest">
+              {mode === 'ego' ? 'TOPOLOGY GRAPH' : '4-HOP FORWARD TRACE'}
             </span>
-            <span className="bg-slate-800 text-slate-300 text-[10px] font-mono px-2 py-0.5 rounded">
-              Base v0.1
+            <span className="bg-[#0b0f19] border border-white/[0.06] text-slate-400 text-[9px] font-mono px-1.5 py-0.2 rounded">
+              DETERMINISTIC
             </span>
           </div>
-          <h1 className="text-xl font-bold font-mono text-slate-100 tracking-wide mt-1">
-            Network Traversal & Money-Flow Graph
+          <h1 className="text-xl sm:text-2xl font-semibold text-slate-100 tracking-tight font-sans mt-1">
+            Network Traversal &amp; Money-Flow Graph
           </h1>
         </div>
 
         {/* Action Controls */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           {/* Mode Switcher */}
-          <div className="flex bg-slate-900 border border-slate-700/80 rounded-lg p-0.5 text-xs font-mono">
+          <div className="flex bg-[#070a12] border border-white/[0.08] rounded-lg p-0.5 text-xs font-mono">
             <button
               onClick={() => handleModeChange('ego')}
               className={`flex items-center space-x-1.5 px-3 py-1.5 rounded transition ${
                 mode === 'ego'
-                  ? 'bg-cyan-600 text-white font-bold'
+                  ? 'bg-slate-800 text-cyan-300 font-medium'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -118,7 +118,7 @@ export const NetworkGraph: React.FC = () => {
               onClick={() => handleModeChange('trace')}
               className={`flex items-center space-x-1.5 px-3 py-1.5 rounded transition ${
                 mode === 'trace'
-                  ? 'bg-purple-600 text-white font-bold'
+                  ? 'bg-slate-800 text-purple-300 font-medium'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -129,14 +129,14 @@ export const NetworkGraph: React.FC = () => {
 
           {/* Hop Selector for Ego mode */}
           {mode === 'ego' && (
-            <div className="flex items-center space-x-1 bg-slate-900 border border-slate-700/80 px-2 py-1 rounded-lg text-xs font-mono text-slate-300">
-              <span>Hops:</span>
+            <div className="flex items-center space-x-1 bg-[#070a12] border border-white/[0.08] px-2 py-1 rounded-lg text-xs font-mono text-slate-300">
+              <span className="text-slate-500 text-[10px]">HOPS:</span>
               {[1, 2, 3].map((h) => (
                 <button
                   key={h}
                   onClick={() => setMaxHops(h)}
                   className={`px-2 py-0.5 rounded text-xs transition ${
-                    maxHops === h ? 'bg-slate-700 text-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+                    maxHops === h ? 'bg-slate-800 text-cyan-300 font-semibold' : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   {h}
@@ -154,12 +154,12 @@ export const NetworkGraph: React.FC = () => {
                 value={inputAccount}
                 onChange={(e) => setInputAccount(e.target.value)}
                 placeholder="Target Account..."
-                className="bg-[#0b0f19] border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition w-44"
+                className="bg-[#06080d]/80 border border-white/[0.08] rounded-lg pl-8 pr-3 py-1.5 text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition w-44"
               />
             </div>
             <button
               type="submit"
-              className="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition"
+              className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition"
             >
               Run
             </button>
