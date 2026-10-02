@@ -6,8 +6,7 @@ import {
   ShieldCheck,
   Search,
   BookOpen,
-  Scale,
-  ArrowRight
+  Scale
 } from 'lucide-react';
 import { createCaseFile } from '../api/accounts';
 import type { CaseFileResponse } from '../types';
@@ -131,14 +130,6 @@ export const CaseFileView: React.FC = () => {
               className="w-full bg-white border border-slate-300 rounded pl-9 pr-4 py-2 text-xs sm:text-sm font-mono text-slate-800 placeholder-slate-400 focus:outline-none focus:border-violet-600 transition"
             />
           </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-violet-700 hover:bg-violet-600 disabled:opacity-50 text-white px-5 py-2 rounded text-xs font-mono font-semibold flex items-center justify-center gap-2 transition shrink-0"
-          >
-            <span>{loading ? 'Compiling Dossier...' : 'Generate Case File'}</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
         </form>
 
         {/* Benchmark Account Quick Selectors */}

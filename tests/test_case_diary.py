@@ -136,11 +136,16 @@ def _make_diary_db(rows: list) -> duckdb.DuckDBPyConnection:
             'MODERATE' AS risk_band,
             '[]' AS risk_reasons,
             '{}' AS risk_family_scores,
-            'v1' AS risk_model_version,
+            'v2_two_axis' AS risk_model_version,
             NULL::TIMESTAMP AS risk_computed_at,
             'DERIVED' AS risk_provenance,
             NULL::VARCHAR AS risk_factors,
-            FALSE AS cycle_indicator
+            FALSE AS cycle_indicator,
+            30.0 AS structural_risk_index,
+            20.0 AS behavioral_risk_index,
+            'LOW CURRENT INDICATOR' AS investigative_signal,
+            'Both indicators currently limited.' AS investigative_summary,
+            FALSE AS multi_modal_confirmation
         FROM accounts_dimension;
     """)
     return con

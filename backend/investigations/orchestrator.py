@@ -229,12 +229,12 @@ def investigate_victim_account(
     risk_score = get_account_risk(con, acc)
     if not risk_score:
         risk_score = MuleRiskScore(
-            account_id=acc,
+            account_number=acc,
             risk_index=0.0,
             risk_band="LOW",
-            scoring_version="v1",
-            provenance="DERIVED",
-            disclaimer="INVESTIGATIVE CANDIDATE INDICATORS ONLY -- not a declaration of criminality or legal determination.",
+            risk_model_version="v2_two_axis",
+            risk_provenance="DERIVED",
+            risk_disclaimer="INVESTIGATIVE CANDIDATE INDICATORS ONLY -- not a declaration of criminality or legal determination.",
         )
 
     # 5. Step 5A Velocity

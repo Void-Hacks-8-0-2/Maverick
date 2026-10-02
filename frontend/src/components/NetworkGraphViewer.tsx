@@ -53,7 +53,7 @@ export const NetworkGraphViewer: React.FC<NetworkGraphViewerProps> = ({
   const [selectedCluster, setSelectedCluster] = useState<ClusterMeta | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<GraphEdge | null>(null);
   const [activeHudFilter, setActiveHudFilter] = useState<'ALL' | 'EGO' | 'TERMINAL'>('ALL');
-  const [viewDetailMode, setViewDetailMode] = useState<'OVERVIEW' | 'NETWORK' | 'DETAIL'>('OVERVIEW');
+  const [viewDetailMode, setViewDetailMode] = useState<'OVERVIEW' | 'NETWORK' | 'DETAIL'>('NETWORK');
   const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
 
   // Determine if network is dense (>50 nodes)
@@ -992,19 +992,31 @@ export const NetworkGraphViewer: React.FC<NetworkGraphViewerProps> = ({
         </div>
       </div>
 
-      {/* ── Bottom-Left: Minimap ──────────────────────────────── */}
-      <div
-        className="absolute bottom-4 left-4 z-10 hidden sm:block rounded-xl p-1.5 pointer-events-none"
-        style={{
-          backgroundColor: 'rgba(255,255,255,0.9)',
-          border: '1px solid rgba(0,0,0,0.09)',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-        }}
-      >
-        <canvas ref={minimapCanvasRef} width={130} height={70} className="rounded" />
-        <div className="flex justify-between items-center px-1 pt-1 text-[9px] font-mono" style={{ color: '#9ca3af' }}>
-          <span>TOPOLOGY MAP</span>
-          <span>{nodes.length} ACCTS</span>
+      {/* ── Bottom-Left: Minimap & Usability Hint ──────────────── */}
+      <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-1.5 pointer-events-none">
+        <div
+          className="hidden sm:block rounded-xl p-1.5"
+          style={{
+            backgroundColor: 'rgba(255,255,255,0.9)',
+            border: '1px solid rgba(0,0,0,0.09)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          }}
+        >
+          <canvas ref={minimapCanvasRef} width={130} height={70} className="rounded" />
+          <div className="flex justify-between items-center px-1 pt-1 text-[9px] font-mono" style={{ color: '#9ca3af' }}>
+            <span>TOPOLOGY MAP</span>
+            <span>{nodes.length} ACCTS</span>
+          </div>
+        </div>
+        <div
+          className="px-2.5 py-1 rounded-lg text-[10px] font-mono text-slate-500 backdrop-blur-xs"
+          style={{
+            backgroundColor: 'rgba(255,255,255,0.88)',
+            border: '1px solid rgba(0,0,0,0.08)',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+          }}
+        >
+          Zoom to inspect &bull; Click a node or edge for details
         </div>
       </div>
 

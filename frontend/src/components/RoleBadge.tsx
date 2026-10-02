@@ -11,7 +11,8 @@ export const RoleBadge: React.FC<RoleBadgeProps> = ({
   size = 'md',
   detailed = false
 }) => {
-  const normalized = role.toUpperCase();
+  const normalized = (role || '').toUpperCase();
+  const key = normalized.includes('L3') ? 'L3' : normalized.includes('L2') ? 'L2' : normalized.includes('L1') ? 'L1' : normalized;
 
   const configs: Record<string, { label: string; fullTitle: string; desc: string; style: string }> = {
     L1: {
@@ -28,8 +29,8 @@ export const RoleBadge: React.FC<RoleBadgeProps> = ({
     },
     L3: {
       label: 'L3 TERMINAL',
-      fullTitle: 'Layer 3: Terminal / Cash-Out Candidate',
-      desc: 'Sink node absorption, egress termination, or lack of forward distribution',
+      fullTitle: 'L3 Terminal Candidate',
+      desc: 'Observed transaction indicators associated with terminal/cash-out behavior',
       style: 'bg-rose-50 border-rose-300 text-rose-700'
     },
     MIXED: {
@@ -40,7 +41,7 @@ export const RoleBadge: React.FC<RoleBadgeProps> = ({
     }
   };
 
-  const config = configs[normalized] || {
+  const config = configs[key] || {
     label: normalized,
     fullTitle: normalized,
     desc: 'Investigative candidate role classification',

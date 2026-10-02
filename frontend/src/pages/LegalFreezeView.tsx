@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import {
   Search,
   ShieldAlert,
@@ -22,7 +22,7 @@ import type {
   LegalDraftResponse
 } from '../types';
 
-const PRESET_ACCOUNTS = ['KKBK10000402', 'AIRP10000595', 'PYTM10001005', 'PUNB10000806'];
+const PRESET_ACCOUNTS = ['KKBK10000402', 'BARB10000427', 'KKBK10013350', 'ICIC10021594', 'AIRP10021987'];
 
 const DOC_TYPES: { id: LegalDocumentType; title: string; subtitle: string; icon: any; color: string }[] = [
   {
@@ -56,11 +56,17 @@ const DOC_TYPES: { id: LegalDocumentType; title: string; subtitle: string; icon:
 ];
 
 export const LegalFreezeView: React.FC = () => {
+  const { id: routeId } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const queryAccount = searchParams.get('account') || searchParams.get('q') || 'KKBK10000402';
-  const queryDraftId = searchParams.get('draft_id');
 
-  const [subjectAccount, setSubjectAccount] = useState<string>(queryAccount);
+  const queryDraftId = searchParams.get('draft_id') || (routeId?.startsWith('DRAFT-') ? routeId : null);
+  const queryAccount = (routeId && !routeId.startsWith('DRAFT-'))
+    ? routeId
+    : (searchParams.get('account') || searchParams.get('q') || '');
+
+  const effectiveAccount = queryAccount || 'KKBK10000402';
+
+  const [subjectAccount, setSubjectAccount] = useState<string>(effectiveAccount);
   const [selectedDocType, setSelectedDocType] = useState<LegalDocumentType>('ACCOUNT_FREEZE_REQUEST');
   const [caseFileId, setCaseFileId] = useState<string>('');
   const [caseDiaryId, setCaseDiaryId] = useState<string>('');
@@ -86,38 +92,22 @@ export const LegalFreezeView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'document' | 'evidence' | 'seals'>('document');
 
-  useEffect(() => {
-    if (queryDraftId) {
-      loadDraftById(queryDraftId);
-    }
-  }, [queryDraftId]);
+  // Prevent stale async overwrites
+  const currentRequestIdRef = useRef<number>(0);
 
-  const loadDraftById = async (id: string) => {
+  const generateForAccount = async (targetAccount?: string, targetDocType?: LegalDocumentType) => {
+    const acc = (targetAccount || subjectAccount).trim().toUpperCase();
+    if (!acc) return;
+
+    const reqId = ++currentRequestIdRef.current;
     setLoading(true);
     setError(null);
-    try {
-      const res: LegalDraftResponse = await getLegalDraft(id);
-      setDraftPackage(res.draft);
-      setGenerationTimeMs(res.generation_time_ms);
-      setSubjectAccount(res.draft.subject_account);
-      setSelectedDocType(res.draft.document_type);
-    } catch (err: any) {
-      setError(err?.message || 'Failed to load legal draft');
-    } finally {
-      setLoading(false);
-    }
-  };
+    setSubjectAccount(acc);
 
-  const handleGenerate = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!subjectAccount.trim()) return;
-
-    setLoading(true);
-    setError(null);
     try {
       const res: LegalDraftResponse = await createLegalDraft({
-        subject_account: subjectAccount.trim().toUpperCase(),
-        document_type: selectedDocType,
+        subject_account: acc,
+        document_type: targetDocType || selectedDocType,
         case_file_id: caseFileId.trim() || undefined,
         case_diary_id: caseDiaryId.trim() || undefined,
         max_hops: maxHops,
@@ -134,17 +124,81 @@ export const LegalFreezeView: React.FC = () => {
         investigator_notes: investigatorNotes.trim() || undefined,
       });
 
-      setDraftPackage(res.draft);
-      setGenerationTimeMs(res.generation_time_ms);
-      setSearchParams({
-        account: res.draft.subject_account,
-        draft_id: res.draft.package_id
-      });
+      if (reqId === currentRequestIdRef.current) {
+        setDraftPackage(res.draft);
+        setGenerationTimeMs(res.generation_time_ms);
+        setSearchParams({
+          account: res.draft.subject_account,
+          draft_id: res.draft.package_id
+        });
+      }
     } catch (err: any) {
-      setError(err?.message || 'Failed to generate legal draft');
+      if (reqId === currentRequestIdRef.current) {
+        setError(err?.message || 'Failed to generate legal draft');
+      }
     } finally {
-      setLoading(false);
+      if (reqId === currentRequestIdRef.current) {
+        setLoading(false);
+      }
     }
+  };
+
+  const loadDraftById = async (id: string) => {
+    const reqId = ++currentRequestIdRef.current;
+    setLoading(true);
+    setError(null);
+    try {
+      const res: LegalDraftResponse = await getLegalDraft(id);
+      if (reqId === currentRequestIdRef.current) {
+        setDraftPackage(res.draft);
+        setGenerationTimeMs(res.generation_time_ms);
+        setSubjectAccount(res.draft.subject_account);
+        setSelectedDocType(res.draft.document_type);
+      }
+    } catch (err: any) {
+      // If draft expired from process-local cache, extract account and regenerate
+      const match = id.match(/DRAFT-([A-Za-z0-9]+)-/);
+      if (match && match[1]) {
+        console.warn(`Draft ${id} not found in store, regenerating for ${match[1]}`);
+        await generateForAccount(match[1]);
+        return;
+      }
+      if (reqId === currentRequestIdRef.current) {
+        setError(err?.message || 'Failed to load legal draft');
+      }
+    } finally {
+      if (reqId === currentRequestIdRef.current) {
+        setLoading(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (queryDraftId) {
+      loadDraftById(queryDraftId);
+    } else if (queryAccount) {
+      setSubjectAccount(queryAccount);
+      if (!draftPackage || draftPackage.subject_account !== queryAccount.toUpperCase()) {
+        generateForAccount(queryAccount);
+      }
+    } else {
+      // Default demo load if nothing loaded yet
+      if (!draftPackage) {
+        generateForAccount('KKBK10000402');
+      }
+    }
+  }, [routeId, searchParams.get('account'), searchParams.get('q'), searchParams.get('draft_id')]);
+
+  const handleGenerate = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!subjectAccount.trim()) return;
+    await generateForAccount(subjectAccount);
+  };
+
+  const handlePresetSelect = (acc: string) => {
+    setSubjectAccount(acc);
+    setSearchParams({ account: acc });
+    generateForAccount(acc);
   };
 
   return (
@@ -212,6 +266,12 @@ export const LegalFreezeView: React.FC = () => {
                   type="text"
                   value={subjectAccount}
                   onChange={(e) => setSubjectAccount(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleGenerate();
+                    }
+                  }}
                   placeholder="e.g. KKBK10000402"
                   className="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none focus:border-violet-600 transition"
                 />
@@ -224,7 +284,7 @@ export const LegalFreezeView: React.FC = () => {
                   <button
                     key={acc}
                     type="button"
-                    onClick={() => setSubjectAccount(acc)}
+                    onClick={() => handlePresetSelect(acc)}
                     className={`px-2 py-0.5 rounded text-[11px] font-mono transition border ${
                       subjectAccount === acc
                         ? 'bg-violet-50 text-violet-800 border-violet-300 font-semibold'

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, useParams, Link } from 'react-router-dom';
 import {
   BookOpen,
   Search,
@@ -28,15 +28,18 @@ import type {
   CaseDiaryResponse
 } from '../types';
 
-const PRESET_ACCOUNTS = ['KKBK10000402', 'AIRP10000595', 'PYTM10001005', 'PUNB10000806'];
+const PRESET_ACCOUNTS = ['KKBK10000402', 'BARB10000427', 'KKBK10013350', 'ICIC10021594', 'AIRP10021987'];
 
 export const CaseDiaryView: React.FC = () => {
+  const { id: routeId } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const queryAccount = searchParams.get('account') || searchParams.get('q') || 'KKBK10000402';
-  const queryDiaryId = searchParams.get('diary_id');
 
-  const [inputAccount, setInputAccount] = useState(queryAccount);
-  const [activeAccount, setActiveAccount] = useState<string>(queryAccount);
+  const initialAccount = (routeId && !routeId.startsWith('DIARY-'))
+    ? routeId.trim().toUpperCase()
+    : ((searchParams.get('account') || searchParams.get('q') || '').trim().toUpperCase() || 'KKBK10000402');
+
+  const [inputAccount, setInputAccount] = useState(initialAccount);
+  const [activeAccount, setActiveAccount] = useState<string>(initialAccount);
   const [diary, setDiary] = useState<CaseDiary | null>(null);
   const [generationTimeMs, setGenerationTimeMs] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -52,36 +55,14 @@ export const CaseDiaryView: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [eventFilter, setEventFilter] = useState<string>('ALL');
 
-  useEffect(() => {
-    if (queryDiaryId) {
-      loadDiaryById(queryDiaryId);
-    } else if (activeAccount) {
-      loadOrCreateDiary(activeAccount);
-    }
-  }, [activeAccount, queryDiaryId]);
-
-  const loadDiaryById = async (diaryId: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res: CaseDiaryResponse = await getCaseDiary(diaryId);
-      setDiary(res.case_diary);
-      setGenerationTimeMs(res.generation_time_ms);
-      setInvestigatorNotes(res.case_diary.investigator_notes || '');
-      setInputAccount(res.case_diary.subject_account);
-    } catch (err: any) {
-      setError(err?.message || 'Failed to load case diary');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const loadOrCreateDiary = async (acc: string) => {
+    const clean = acc.trim().toUpperCase();
+    if (!clean) return;
     setLoading(true);
     setError(null);
     try {
       const res: CaseDiaryResponse = await createCaseDiary({
-        account_number: acc,
+        account_number: clean,
         max_hops: maxHops,
         generate_narrative: withNarrative,
         investigator_notes: investigatorNotes
@@ -89,33 +70,161 @@ export const CaseDiaryView: React.FC = () => {
       setDiary(res.case_diary);
       setGenerationTimeMs(res.generation_time_ms);
       setInvestigatorNotes(res.case_diary.investigator_notes || '');
-      setSearchParams({ account: acc, diary_id: res.case_diary.case_diary_id });
+      setInputAccount(res.case_diary.subject_account);
+      setActiveAccount(res.case_diary.subject_account);
+      setSearchParams({ account: clean, diary_id: res.case_diary.case_diary_id }, { replace: true });
     } catch (err: any) {
-      setError(err?.message || 'Failed to generate case diary');
+      setError(err?.message || `Failed to generate case diary for account ${clean}`);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const currentRouteDiaryId = routeId?.startsWith('DIARY-') ? routeId.trim() : undefined;
+    const currentRouteAccount = routeId && !routeId.startsWith('DIARY-') ? routeId.trim().toUpperCase() : undefined;
+    const currentParamAccount = (searchParams.get('account') || searchParams.get('q') || '').trim().toUpperCase();
+    const currentParamDiaryId = (searchParams.get('diary_id') || '').trim();
+
+    const targetDiaryId = currentRouteDiaryId || currentParamDiaryId;
+    const targetAccount = currentRouteAccount || currentParamAccount;
+
+    if (targetDiaryId) {
+      if (diary?.case_diary_id === targetDiaryId) return;
+      setLoading(true);
+      setError(null);
+      getCaseDiary(targetDiaryId)
+        .then((res) => {
+          if (cancelled) return;
+          setDiary(res.case_diary);
+          setGenerationTimeMs(res.generation_time_ms);
+          setInvestigatorNotes(res.case_diary.investigator_notes || '');
+          setInputAccount(res.case_diary.subject_account);
+          setActiveAccount(res.case_diary.subject_account);
+          setLoading(false);
+        })
+        .catch(async () => {
+          if (cancelled) return;
+          const parts = targetDiaryId.split('-');
+          if (parts.length >= 2 && parts[1]) {
+            const fallbackAcc = parts[1].trim().toUpperCase();
+            try {
+              const res = await createCaseDiary({
+                account_number: fallbackAcc,
+                max_hops: maxHops,
+                generate_narrative: withNarrative,
+                investigator_notes: investigatorNotes
+              });
+              if (cancelled) return;
+              setDiary(res.case_diary);
+              setGenerationTimeMs(res.generation_time_ms);
+              setInputAccount(res.case_diary.subject_account);
+              setActiveAccount(res.case_diary.subject_account);
+              setSearchParams({ account: fallbackAcc, diary_id: res.case_diary.case_diary_id }, { replace: true });
+              setLoading(false);
+              return;
+            } catch {}
+          }
+          setError('Failed to load case diary');
+          setLoading(false);
+        });
+    } else if (targetAccount) {
+      if (diary?.subject_account === targetAccount && !loading) return;
+
+      setInputAccount(targetAccount);
+      setActiveAccount(targetAccount);
+      setLoading(true);
+      setError(null);
+      createCaseDiary({
+        account_number: targetAccount,
+        max_hops: maxHops,
+        generate_narrative: withNarrative,
+        investigator_notes: investigatorNotes
+      })
+        .then((res) => {
+          if (cancelled) return;
+          setDiary(res.case_diary);
+          setGenerationTimeMs(res.generation_time_ms);
+          setInvestigatorNotes(res.case_diary.investigator_notes || '');
+          setInputAccount(res.case_diary.subject_account);
+          setActiveAccount(res.case_diary.subject_account);
+          setSearchParams({ account: targetAccount, diary_id: res.case_diary.case_diary_id }, { replace: true });
+          setLoading(false);
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setError(err?.message || `Failed to generate case diary for account ${targetAccount}`);
+          setLoading(false);
+        });
+    } else {
+      const defaultAcc = 'KKBK10000402';
+      if (diary?.subject_account === defaultAcc && !loading) return;
+      setInputAccount(defaultAcc);
+      setActiveAccount(defaultAcc);
+      loadOrCreateDiary(defaultAcc);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [routeId, searchParams.get('account'), searchParams.get('q'), searchParams.get('diary_id')]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputAccount.trim()) return;
     const clean = inputAccount.trim().toUpperCase();
     setActiveAccount(clean);
+    // Explicitly update searchParams to ONLY account, clearing any stale diary_id
+    setSearchParams({ account: clean });
+    loadOrCreateDiary(clean);
+  };
+
+  const handlePresetSelect = (acc: string) => {
+    const clean = acc.trim().toUpperCase();
+    setInputAccount(clean);
+    setActiveAccount(clean);
+    // Explicitly update searchParams to ONLY account, clearing any stale diary_id
+    setSearchParams({ account: clean });
+    loadOrCreateDiary(clean);
   };
 
   const handleRegenerateNarrative = async () => {
-    if (!diary) return;
+    const targetAccount = activeAccount || inputAccount.trim().toUpperCase() || diary?.subject_account;
+    if (!targetAccount) return;
+
     setNarrativeLoading(true);
+    setError(null);
     try {
-      const res: CaseDiaryResponse = await generateDiaryNarrative(diary.case_diary_id, {
-        force_deterministic: forceDeterministic,
+      if (diary?.case_diary_id) {
+        try {
+          const res = await generateDiaryNarrative(diary.case_diary_id, {
+            force_deterministic: forceDeterministic,
+            investigator_notes: investigatorNotes
+          });
+          setDiary(res.case_diary);
+          setGenerationTimeMs(res.generation_time_ms);
+          return;
+        } catch (subErr: any) {
+          console.warn('Existing diary ID missing from backend memory, rebuilding diary with narrative...', subErr);
+        }
+      }
+
+      // Rebuild diary with narrative for this exact account
+      const res = await createCaseDiary({
+        account_number: targetAccount,
+        max_hops: maxHops,
+        generate_narrative: true,
         investigator_notes: investigatorNotes
       });
       setDiary(res.case_diary);
       setGenerationTimeMs(res.generation_time_ms);
+      setInputAccount(res.case_diary.subject_account);
+      setActiveAccount(res.case_diary.subject_account);
+      setSearchParams({ account: targetAccount, diary_id: res.case_diary.case_diary_id }, { replace: true });
     } catch (err: any) {
-      setError(err?.message || 'Failed to regenerate AI narrative');
+      setError(err?.message || 'Failed to generate AI narrative');
     } finally {
       setNarrativeLoading(false);
     }
@@ -282,10 +391,7 @@ export const CaseDiaryView: React.FC = () => {
             <button
               key={acc}
               type="button"
-              onClick={() => {
-                setInputAccount(acc);
-                setActiveAccount(acc);
-              }}
+              onClick={() => handlePresetSelect(acc)}
               className={`px-2.5 py-0.5 rounded font-mono text-xs transition border ${
                 activeAccount === acc
                   ? 'bg-violet-50 text-violet-700 border-violet-300 font-semibold'
@@ -499,9 +605,11 @@ export const CaseDiaryView: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleRegenerateNarrative}
-                  className="mt-2 text-xs text-violet-700 hover:text-violet-600 font-semibold underline"
+                  disabled={narrativeLoading}
+                  className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white rounded text-xs font-medium shadow-sm transition"
                 >
-                  Generate Narrative Now
+                  {narrativeLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {narrativeLoading ? 'Generating AI Narrative...' : 'Generate Narrative Now'}
                 </button>
               </div>
             )}

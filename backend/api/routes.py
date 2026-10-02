@@ -112,7 +112,11 @@ class PaginatedTransactionsResponse(BaseModel):
 class MuleCandidateItem(BaseModel):
     account_number: str
     risk_index: float
+    structural_risk_index: float = 0.0
+    behavioral_risk_index: float = 0.0
     risk_band: str
+    investigative_signal: str = "LOW CURRENT INDICATOR"
+    multi_modal_confirmation: bool = False
     layer1_candidate: bool
     layer2_candidate: bool
     layer3_candidate: bool
@@ -124,6 +128,7 @@ class MuleCandidateItem(BaseModel):
     fan_in: int
     fan_out: int
     transaction_count: int
+
 
 
 class MuleIntelligenceSummary(BaseModel):
@@ -322,6 +327,8 @@ def get_mule_intelligence(
     # 3. Dynamic sorting
     sort_column_map = {
         "risk": "mule_risk_index",
+        "structural_risk": "structural_risk_index",
+        "behavioral_risk": "behavioral_risk_index",
         "volume": "incoming_volume",
         "fan_in": "fan_in",
         "fan_out": "fan_out",
@@ -345,7 +352,11 @@ def get_mule_intelligence(
             COALESCE(net_flow_delta, 0.0),
             COALESCE(fan_in, 0),
             COALESCE(fan_out, 0),
-            (COALESCE(incoming_txn_count, 0) + COALESCE(outgoing_txn_count, 0)) AS transaction_count
+            (COALESCE(incoming_txn_count, 0) + COALESCE(outgoing_txn_count, 0)) AS transaction_count,
+            COALESCE(structural_risk_index, 0.0),
+            COALESCE(behavioral_risk_index, 0.0),
+            COALESCE(investigative_signal, 'LOW CURRENT INDICATOR'),
+            COALESCE(multi_modal_confirmation, false)
         FROM account_features
         WHERE {where_sql}
         ORDER BY {sort_col} {sort_dir} NULLS LAST
@@ -369,6 +380,10 @@ def get_mule_intelligence(
             fan_in=int(r[11]),
             fan_out=int(r[12]),
             transaction_count=int(r[13]),
+            structural_risk_index=round(float(r[14]), 1),
+            behavioral_risk_index=round(float(r[15]), 1),
+            investigative_signal=str(r[16]),
+            multi_modal_confirmation=bool(r[17]),
         ))
 
     return MuleIntelligenceResponse(

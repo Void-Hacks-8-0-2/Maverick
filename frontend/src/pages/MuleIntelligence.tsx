@@ -317,7 +317,19 @@ export const MuleIntelligence: React.FC = () => {
                         </button>
                       </td>
                       <td className="py-2.5 px-4">
-                        <RiskBadge score={item.risk_index} band={item.risk_band} size="sm" />
+                        <div className="flex flex-col gap-1">
+                          <RiskBadge score={item.risk_index} band={item.risk_band} size="sm" />
+                          <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
+                            <span title="Structural Risk">S: <strong className="text-slate-700">{item.structural_risk_index !== undefined && item.structural_risk_index !== null ? item.structural_risk_index.toFixed(1) : '—'}</strong></span>
+                            <span>&bull;</span>
+                            <span title="Behavioral Risk">B: <strong className="text-slate-700">{item.behavioral_risk_index !== undefined && item.behavioral_risk_index !== null ? item.behavioral_risk_index.toFixed(1) : '—'}</strong></span>
+                          </div>
+                          {item.multi_modal_confirmation && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-violet-50 text-violet-800 border border-violet-200">
+                              MULTI-MODAL
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-2.5 px-4">
                         <div className="flex flex-wrap items-center gap-1">

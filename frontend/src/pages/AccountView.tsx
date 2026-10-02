@@ -361,15 +361,15 @@ export const AccountView: React.FC = () => {
             {/* Score & Tier Box (4 cols) */}
             <div className="lg:col-span-4 bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between space-y-4">
               <div>
-                <span className="text-xs text-slate-500 uppercase tracking-wider block font-semibold">Bounded Investigative Index</span>
+                <span className="text-xs text-slate-500 uppercase tracking-wider block font-semibold">Composite Investigative Index</span>
                 <div className="mt-2 flex items-baseline space-x-2">
                   <span className={`text-4xl font-extrabold ${
                     risk.risk_band === 'VERY_HIGH' ? 'text-rose-700'
-                    : risk.risk_band === 'HIGH' ? 'text-amber-800'
-                    : risk.risk_band === 'MODERATE' ? 'text-violet-700'
-                    : 'text-emerald-700'
+                    : risk.risk_band === 'HIGH' ? 'text-rose-700'
+                    : risk.risk_band === 'MODERATE' ? 'text-amber-800'
+                    : 'text-slate-700'
                   }`}>
-                    {risk.risk_index}
+                    {risk.risk_index.toFixed(1)}
                   </span>
                   <span className="text-lg text-slate-400 font-bold">/ 100</span>
                 </div>
@@ -379,12 +379,28 @@ export const AccountView: React.FC = () => {
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${
                       risk.risk_band === 'VERY_HIGH' ? 'bg-rose-600'
-                      : risk.risk_band === 'HIGH' ? 'bg-amber-600'
-                      : risk.risk_band === 'MODERATE' ? 'bg-violet-600'
-                      : 'bg-emerald-600'
+                      : risk.risk_band === 'HIGH' ? 'bg-rose-600'
+                      : risk.risk_band === 'MODERATE' ? 'bg-amber-600'
+                      : 'bg-slate-500'
                     }`}
                     style={{ width: `${Math.min(Math.max(risk.risk_index, 3), 100)}%` }}
                   />
+                </div>
+
+                {/* Multi-modal or Signal badge */}
+                <div className="mt-3">
+                  {risk.multi_modal_confirmation ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-violet-100 text-violet-800 border border-violet-300">
+                      MULTI-MODAL EVIDENCE
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                      {risk.investigative_signal || `${risk.risk_band} INDICATOR`}
+                    </span>
+                  )}
+                  <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                    {risk.investigative_summary || 'Independent structural and behavioral evaluation.'}
+                  </p>
                 </div>
               </div>
 
@@ -394,7 +410,7 @@ export const AccountView: React.FC = () => {
                   <span>Provenance: <strong className="text-slate-800">{risk.risk_provenance}</strong></span>
                 </div>
                 <p className="text-[10px] text-slate-500 leading-normal italic">
-                  Deterministic bounded aggregation across 6 independent evidence families with strict non-duplicative ceilings.
+                  Two-Axis Decoupled Model: 0.5 &times; Behavioral ({risk.behavioral_risk_index?.toFixed(1) ?? '0.0'}) + 0.5 &times; Structural ({risk.structural_risk_index?.toFixed(1) ?? '0.0'}) {risk.multi_modal_confirmation ? '+ 10 Multi-Modal' : ''}.
                 </p>
               </div>
             </div>
@@ -402,103 +418,151 @@ export const AccountView: React.FC = () => {
             {/* Family Contribution Breakdown (8 cols) */}
             <div className="lg:col-span-8 bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
               <span className="text-xs text-slate-500 uppercase tracking-wider block font-semibold">
-                Family Contribution Breakdown
+                Two-Axis Component Breakdown
               </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                {/* Velocity */}
-                <div className="bg-white border border-slate-200 p-2.5 rounded-lg space-y-1 shadow-sm">
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-slate-700">Velocity (3–15 min)</span>
-                    <span className="font-bold text-violet-700">
-                      {risk.risk_family_scores['VELOCITY'] ?? 0} <span className="text-slate-400 font-normal">/ 25</span>
-                    </span>
+                {/* Behavioral Axis Sub-cards */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-200">
+                    <span className="font-bold text-[11px] text-slate-800">AXIS 1: BEHAVIORAL RISK</span>
+                    <span className="font-bold text-violet-700">{risk.behavioral_risk_index?.toFixed(1) ?? 0} / 100</span>
                   </div>
-                  <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="bg-violet-600 h-full rounded-full"
-                      style={{ width: `${((risk.risk_family_scores['VELOCITY'] ?? 0) / 25) * 100}%` }}
-                    />
+
+                  {/* Velocity */}
+                  <div className="bg-white border border-slate-200 p-2 rounded-lg space-y-1 shadow-xs">
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-slate-700">Velocity (3–15m)</span>
+                      <span className="font-bold text-violet-700">
+                        {risk.risk_family_scores['BEHAVIORAL_VELOCITY'] ?? 0} <span className="text-slate-400 font-normal">/ 40</span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+                      <div
+                        className="bg-violet-600 h-full rounded-full"
+                        style={{ width: `${Math.min(100, (((risk.risk_family_scores['BEHAVIORAL_VELOCITY'] ?? 0) / 40) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Automation */}
+                  <div className="bg-white border border-slate-200 p-2 rounded-lg space-y-1 shadow-xs">
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-slate-700">Automation (Emulator / Script / IP)</span>
+                      <span className="font-bold text-violet-700">
+                        {risk.risk_family_scores['BEHAVIORAL_AUTOMATION'] ?? 0} <span className="text-slate-400 font-normal">/ 30</span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+                      <div
+                        className="bg-violet-600 h-full rounded-full"
+                        style={{ width: `${Math.min(100, (((risk.risk_family_scores['BEHAVIORAL_AUTOMATION'] ?? 0) / 30) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Flow Parity */}
+                  <div className="bg-white border border-slate-200 p-2 rounded-lg space-y-1 shadow-xs">
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-slate-700">Flow Parity</span>
+                      <span className="font-bold text-violet-700">
+                        {risk.risk_family_scores['BEHAVIORAL_FLOW_PARITY'] ?? 0} <span className="text-slate-400 font-normal">/ 20</span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+                      <div
+                        className="bg-violet-600 h-full rounded-full"
+                        style={{ width: `${Math.min(100, (((risk.risk_family_scores['BEHAVIORAL_FLOW_PARITY'] ?? 0) / 20) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Burst / Temporal */}
+                  <div className="bg-white border border-slate-200 p-2 rounded-lg space-y-1 shadow-xs">
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-slate-700">Burst & Temporal Anomaly</span>
+                      <span className="font-bold text-violet-700">
+                        {risk.risk_family_scores['BEHAVIORAL_BURST_TEMPORAL'] ?? 0} <span className="text-slate-400 font-normal">/ 10</span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+                      <div
+                        className="bg-violet-600 h-full rounded-full"
+                        style={{ width: `${Math.min(100, (((risk.risk_family_scores['BEHAVIORAL_BURST_TEMPORAL'] ?? 0) / 10) * 100))}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Automation */}
-                <div className="bg-white border border-slate-200 p-2.5 rounded-lg space-y-1 shadow-sm">
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-slate-700">Automation / Device / IP</span>
-                    <span className="font-bold text-violet-700">
-                      {risk.risk_family_scores['AUTOMATION'] ?? 0} <span className="text-slate-400 font-normal">/ 20</span>
-                    </span>
+                {/* Structural Axis Sub-cards */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-200">
+                    <span className="font-bold text-[11px] text-slate-800">AXIS 2: STRUCTURAL RISK</span>
+                    <span className="font-bold text-violet-700">{risk.structural_risk_index?.toFixed(1) ?? 0} / 100</span>
                   </div>
-                  <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="bg-violet-600 h-full rounded-full"
-                      style={{ width: `${((risk.risk_family_scores['AUTOMATION'] ?? 0) / 20) * 100}%` }}
-                    />
-                  </div>
-                </div>
 
-                {/* Flow Structure */}
-                <div className="bg-white border border-slate-200 p-2.5 rounded-lg space-y-1 shadow-sm">
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-slate-700">Flow Structure & Scale</span>
-                    <span className="font-bold text-violet-700">
-                      {risk.risk_family_scores['FLOW_STRUCTURE'] ?? 0} <span className="text-slate-400 font-normal">/ 20</span>
-                    </span>
+                  {/* Degree */}
+                  <div className="bg-white border border-slate-200 p-2 rounded-lg space-y-1 shadow-xs">
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-slate-700">Network Degree / Breadth</span>
+                      <span className="font-bold text-violet-700">
+                        {risk.risk_family_scores['STRUCTURAL_DEGREE'] ?? 0} <span className="text-slate-400 font-normal">/ 35</span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+                      <div
+                        className="bg-violet-600 h-full rounded-full"
+                        style={{ width: `${Math.min(100, (((risk.risk_family_scores['STRUCTURAL_DEGREE'] ?? 0) / 35) * 100))}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="bg-violet-600 h-full rounded-full"
-                      style={{ width: `${((risk.risk_family_scores['FLOW_STRUCTURE'] ?? 0) / 20) * 100}%` }}
-                    />
-                  </div>
-                </div>
 
-                {/* Network Structure */}
-                <div className="bg-white border border-slate-200 p-2.5 rounded-lg space-y-1 shadow-sm">
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-slate-700">Counterparty & Network</span>
-                    <span className="font-bold text-violet-700">
-                      {risk.risk_family_scores['NETWORK_STRUCTURE'] ?? 0} <span className="text-slate-400 font-normal">/ 15</span>
-                    </span>
+                  {/* Intermediary */}
+                  <div className="bg-white border border-slate-200 p-2 rounded-lg space-y-1 shadow-xs">
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-slate-700">Intermediary & Asymmetry</span>
+                      <span className="font-bold text-violet-700">
+                        {risk.risk_family_scores['STRUCTURAL_INTERMEDIARY'] ?? 0} <span className="text-slate-400 font-normal">/ 25</span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+                      <div
+                        className="bg-violet-600 h-full rounded-full"
+                        style={{ width: `${Math.min(100, (((risk.risk_family_scores['STRUCTURAL_INTERMEDIARY'] ?? 0) / 25) * 100))}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="bg-violet-600 h-full rounded-full"
-                      style={{ width: `${((risk.risk_family_scores['NETWORK_STRUCTURE'] ?? 0) / 15) * 100}%` }}
-                    />
-                  </div>
-                </div>
 
-                {/* Transaction Behavior */}
-                <div className="bg-white border border-slate-200 p-2.5 rounded-lg space-y-1 shadow-sm">
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-slate-700">Transaction Behavior</span>
-                    <span className="font-bold text-violet-700">
-                      {risk.risk_family_scores['TRANSACTION_BEHAVIOR'] ?? 0} <span className="text-slate-400 font-normal">/ 10</span>
-                    </span>
+                  {/* Volume Scale */}
+                  <div className="bg-white border border-slate-200 p-2 rounded-lg space-y-1 shadow-xs">
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-slate-700">Volume Scale</span>
+                      <span className="font-bold text-violet-700">
+                        {risk.risk_family_scores['STRUCTURAL_VOLUME'] ?? 0} <span className="text-slate-400 font-normal">/ 20</span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+                      <div
+                        className="bg-violet-600 h-full rounded-full"
+                        style={{ width: `${Math.min(100, (((risk.risk_family_scores['STRUCTURAL_VOLUME'] ?? 0) / 20) * 100))}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="bg-violet-600 h-full rounded-full"
-                      style={{ width: `${((risk.risk_family_scores['TRANSACTION_BEHAVIOR'] ?? 0) / 10) * 100}%` }}
-                    />
-                  </div>
-                </div>
 
-                {/* Role Support */}
-                <div className="bg-white border border-slate-200 p-2.5 rounded-lg space-y-1 shadow-sm">
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-slate-700">Role Classification Support</span>
-                    <span className="font-bold text-violet-700">
-                      {risk.risk_family_scores['ROLE_SUPPORT'] ?? 0} <span className="text-slate-400 font-normal">/ 10</span>
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="bg-violet-600 h-full rounded-full"
-                      style={{ width: `${((risk.risk_family_scores['ROLE_SUPPORT'] ?? 0) / 10) * 100}%` }}
-                    />
+                  {/* Role Support */}
+                  <div className="bg-white border border-slate-200 p-2 rounded-lg space-y-1 shadow-xs">
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-slate-700">Role Classification Support</span>
+                      <span className="font-bold text-violet-700">
+                        {risk.risk_family_scores['STRUCTURAL_ROLE'] ?? 0} <span className="text-slate-400 font-normal">/ 20</span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+                      <div
+                        className="bg-violet-600 h-full rounded-full"
+                        style={{ width: `${Math.min(100, (((risk.risk_family_scores['STRUCTURAL_ROLE'] ?? 0) / 20) * 100))}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -645,7 +709,7 @@ export const AccountView: React.FC = () => {
               : 'bg-slate-50 border-slate-200 text-slate-500'
           }`}>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase">Layer 3: Terminal Node</span>
+              <span className="text-xs font-semibold uppercase">L3 Terminal Candidate</span>
               <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
                 features?.layer3_candidate
                   ? 'bg-rose-100 border border-rose-300 text-rose-900'
@@ -657,24 +721,101 @@ export const AccountView: React.FC = () => {
             <p className="text-[11px] text-slate-600 mt-2">
               Final cash-out or automation-controlled terminal disbursement node.
             </p>
-            {features?.layer3_candidate && features.layer3_reasons.length > 0 && (
-              <div className="mt-3 pt-2 border-t border-rose-200 space-y-1.5">
-                <div className="text-[10px] text-rose-800 font-bold uppercase tracking-wider">
-                  {features.layer3_reasons.some(r => r.code === 'AUTOMATION_DEVICE_ACTIVITY')
-                    ? 'Triggered Mode B: Automated Outflow Drain'
-                    : features.layer3_reasons.some(r => r.code === 'TERMINAL_FLOW_SINK')
-                    ? 'Triggered Mode A: Terminal Accumulation Sink'
-                    : 'Triggered Mode C: Concentrated IP Sink'}
+            {features?.layer3_candidate && (
+              <div className="mt-3 pt-2.5 border-t border-rose-200 space-y-2">
+                <div className="text-[11px] font-bold text-rose-900 tracking-wide">
+                  Observed terminal indicators
                 </div>
-                {features.layer3_reasons.map((r, i) => (
-                  <div key={i} className="text-[10px] text-rose-900 bg-white p-1.5 rounded border border-rose-200 space-y-0.5 shadow-sm">
-                    <div className="flex justify-between items-center text-[9px] font-bold text-rose-700">
-                      <span>{r.code}</span>
-                      <span>Obs: {r.observed_value} {r.threshold !== null && r.threshold !== undefined ? `| Thr: ${r.threshold}` : ''}</span>
-                    </div>
-                    <div className="text-slate-700 text-[10px] leading-tight">{r.description}</div>
+                <div className="bg-white/80 rounded-lg p-2.5 border border-rose-200 space-y-1.5 text-[11px] text-slate-700">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-slate-600">
+                      <span className="text-rose-500 font-bold">&bull;</span>
+                      <span>Web_Emulator activity</span>
+                    </span>
+                    <span className="font-semibold text-slate-900 font-mono">
+                      {features.web_emulator_txn_count !== null && features.web_emulator_txn_count !== undefined
+                        ? `${features.web_emulator_txn_count} transactions`
+                        : 'Not available from dataset'}
+                    </span>
                   </div>
-                ))}
+
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-slate-600">
+                      <span className="text-rose-500 font-bold">&bull;</span>
+                      <span>Linux_Script activity</span>
+                    </span>
+                    <span className="font-semibold text-slate-900 font-mono">
+                      {features.linux_script_txn_count !== null && features.linux_script_txn_count !== undefined
+                        ? `${features.linux_script_txn_count} transactions`
+                        : 'Not available from dataset'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-slate-600">
+                      <span className="text-rose-500 font-bold">&bull;</span>
+                      <span>Rapid outbound movement</span>
+                    </span>
+                    <span className={`font-semibold font-mono ${features.pass_through_candidate || (features.rapid_outflow_count ?? 0) > 0 ? 'text-amber-700' : 'text-slate-600'}`}>
+                      {features.pass_through_candidate || (features.rapid_outflow_count ?? 0) > 0 ? 'Detected' : 'Not detected'}
+                    </span>
+                  </div>
+
+                  {features.pass_through_ratio !== null && features.pass_through_ratio !== undefined && (
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-slate-600">
+                        <span className="text-rose-500 font-bold">&bull;</span>
+                        <span>Pass-through velocity</span>
+                      </span>
+                      <span className="font-semibold text-slate-900 font-mono">
+                        {Math.round(features.pass_through_ratio * 100)}% ({features.pass_through_event_count ?? 0} paired 3–15m events)
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-slate-600">
+                      <span className="text-rose-500 font-bold">&bull;</span>
+                      <span>Outbound transactions</span>
+                    </span>
+                    <span className="font-semibold text-slate-900 font-mono">
+                      {features.outgoing_txn_count ?? detail.outbound_transaction_count ?? 0}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 pt-1 border-t border-rose-100">
+                    <span className="flex items-center gap-1.5 text-slate-600">
+                      <span className="text-rose-500 font-bold">&bull;</span>
+                      <span>Observation window</span>
+                    </span>
+                    <span className="font-medium text-slate-700 font-mono text-[10px]">
+                      {features.first_seen_timestamp && features.last_seen_timestamp
+                        ? `${features.first_seen_timestamp.replace('T', ' ')} to ${features.last_seen_timestamp.replace('T', ' ')}`
+                        : 'Not available from dataset'}
+                    </span>
+                  </div>
+                </div>
+
+                {features.layer3_reasons.length > 0 && (
+                  <div className="space-y-1 pt-1">
+                    <div className="text-[10px] text-rose-800 font-bold uppercase tracking-wider">
+                      {features.layer3_reasons.some(r => r.code === 'AUTOMATION_DEVICE_ACTIVITY')
+                        ? 'Triggered Mode B: Automated Outflow Drain'
+                        : features.layer3_reasons.some(r => r.code === 'TERMINAL_FLOW_SINK')
+                        ? 'Triggered Mode A: Terminal Accumulation Sink'
+                        : 'Triggered Mode C: Concentrated IP Sink'}
+                    </div>
+                    {features.layer3_reasons.map((r, i) => (
+                      <div key={i} className="text-[10px] text-slate-700 bg-white/70 p-1.5 rounded border border-rose-200">
+                        {r.description}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <p className="text-[10px] text-slate-500 italic leading-relaxed pt-1">
+                  These are observed transaction indicators associated with terminal/cash-out behavior. They are investigative evidence, not a determination of criminal intent.
+                </p>
               </div>
             )}
           </div>
@@ -704,17 +845,33 @@ export const AccountView: React.FC = () => {
 
               <div className="bg-white border border-slate-200 p-3 rounded-lg space-y-1.5 shadow-sm">
                 <div className="text-[11px] font-bold text-rose-700 flex items-center justify-between">
-                  <span>Why Layer 3 (Terminal / Cash-Out)?</span>
-                  <span className="text-rose-600 font-normal">Automated Outflow Drain</span>
+                  <span>Why L3 Terminal Candidate?</span>
+                  <span className="text-rose-600 font-normal">
+                    {features?.layer3_reasons.some(r => r.code === 'AUTOMATION_DEVICE_ACTIVITY')
+                      ? 'Automated Outflow Drain'
+                      : features?.layer3_reasons.some(r => r.code === 'TERMINAL_FLOW_SINK')
+                      ? 'Terminal Accumulation Sink'
+                      : 'Concentrated IP Sink'}
+                  </span>
                 </div>
                 <p className="text-[11px] text-slate-600 leading-relaxed">
-                  All <span className="text-rose-700 font-semibold">{features?.web_emulator_txn_count ?? 0} outgoing transactions</span> were executed via <span className="text-rose-700 font-semibold">Web_Emulator</span> (automated environment) discharging <span className="text-rose-700 font-semibold">₹{(features?.outgoing_volume ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> (exceeding the ₹100,000 threshold).
-                  Coupled with a <span className="text-amber-800 font-semibold">{Math.round((features?.pass_through_ratio ?? 0) * 100)}% pass-through ratio</span> in the 3–15 min window, it exhibits automated terminal extraction rather than wide distribution.
+                  {features?.layer3_reasons.some(r => r.code === 'AUTOMATION_DEVICE_ACTIVITY') ? (
+                    <>
+                      Observed <span className="text-rose-700 font-semibold">{features?.web_emulator_txn_count ?? 0} outgoing transactions</span> executed via <span className="text-rose-700 font-semibold">Web_Emulator</span> discharging <span className="text-rose-700 font-semibold">₹{(features?.outgoing_volume ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> (exceeding threshold).
+                      {features?.pass_through_ratio !== null && (
+                        <> Coupled with a <span className="text-amber-800 font-semibold">{Math.round((features?.pass_through_ratio ?? 0) * 100)}% pass-through ratio</span> in the 3–15 min window, it exhibits automated terminal extraction rather than wide distribution.</>
+                      )}
+                    </>
+                  ) : features?.layer3_reasons.length ? (
+                    features.layer3_reasons.map(r => r.description).join(' ')
+                  ) : (
+                    'Observed transaction indicators associated with terminal/cash-out behavior.'
+                  )}
                 </p>
               </div>
             </div>
             <div className="text-[10px] text-slate-500 pt-1 border-t border-slate-200">
-              *Investigative indicator derived deterministically from transaction headers and device fingerprints. Not a legal conclusion or declaration of criminality.
+              *These are observed transaction indicators associated with terminal/cash-out behavior. They are investigative evidence, not a determination of criminal intent.
             </div>
           </div>
         )}

@@ -89,8 +89,8 @@ export const CommandCenter: React.FC = () => {
   const quickActions = [
     {
       id: 'victim',
-      label: 'Victim Investigation',
-      description: 'Multi-hop fund trace from any victim account',
+      label: 'Investigation',
+      description: 'Multi-hop fund trace from any subject account',
       icon: Activity,
       path: '/victim',
       accent: 'var(--accent)',

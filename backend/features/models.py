@@ -133,8 +133,10 @@ class AccountFeatures(BaseModel):
     layer2_signal_count: Optional[int] = Field(0, description="Count of active signals for Layer 2")
     layer3_signal_count: Optional[int] = Field(0, description="Count of active signals for Layer 3")
 
-    # 14. Step 5B -- Explainable 0-100 Mule Risk Index
-    mule_risk_index: Optional[float] = Field(None, description="Deterministic 0-100 Mule Risk Index")
+    # 14. Step 5B -- Explainable 0-100 Mule Risk Index (Two-Axis Decoupled Model)
+    mule_risk_index: Optional[float] = Field(None, description="Deterministic 0-100 Composite Mule Risk Index")
+    structural_risk_index: Optional[float] = Field(None, description="Deterministic 0-100 Structural / Network Footprint Risk Index")
+    behavioral_risk_index: Optional[float] = Field(None, description="Deterministic 0-100 Behavioral / Pass-Through Velocity Risk Index")
     risk_band: Optional[str] = Field(None, description="Risk tier: LOW, MODERATE, HIGH, VERY_HIGH")
     risk_reasons: List[RiskReason] = Field(default_factory=list, description="Structured explainable evidence reason items")
     risk_family_scores: Dict[str, float] = Field(default_factory=dict, description="Point contribution breakdown per evidence family")
@@ -143,6 +145,7 @@ class AccountFeatures(BaseModel):
     risk_provenance: Optional[str] = Field(None, description="Risk scoring provenance marker (DERIVED)")
     risk_factors: Optional[str] = Field(None, description="Explainable factor breakdown")
     cycle_indicator: Optional[bool] = Field(None, description="Circular transaction routing indicator (Future Step)")
+
 
     # 14. Step 5A -- Pass-Through Velocity Detection (3-15 minute window)
     # Reused placeholders (formerly Future Step; now populated by Step 5A)

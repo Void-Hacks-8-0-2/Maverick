@@ -146,6 +146,14 @@ export const App: React.FC = () => {
           }
         />
         <Route
+          path="/case-diary/:id"
+          element={
+            <AppLayout>
+              <CaseDiaryView />
+            </AppLayout>
+          }
+        />
+        <Route
           path="/diary"
           element={
             <AppLayout>
@@ -163,6 +171,30 @@ export const App: React.FC = () => {
         />
         <Route
           path="/legal-freeze"
+          element={
+            <AppLayout>
+              <LegalFreezeView />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/legal-freeze/:id"
+          element={
+            <AppLayout>
+              <LegalFreezeView />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/freeze"
+          element={
+            <AppLayout>
+              <LegalFreezeView />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/freeze/:id"
           element={
             <AppLayout>
               <LegalFreezeView />

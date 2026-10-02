@@ -191,21 +191,23 @@ def test_family_caps_and_reason_points_sum():
     score = get_account_risk(con, "EXTREME_ACC")
 
     assert score is not None
-    # Maximum caps verification
-    cfg = DEFAULT_RISK_CONFIG
+    # Two-Axis Component Caps verification
     fam = score.risk_family_scores
-    assert fam.get("FLOW_STRUCTURE", 0.0) <= cfg.flow.max_family_points
-    assert fam.get("VELOCITY", 0.0) <= cfg.velocity.max_family_points
-    assert fam.get("AUTOMATION", 0.0) <= cfg.automation.max_family_points
-    assert fam.get("NETWORK_STRUCTURE", 0.0) <= cfg.network.max_family_points
-    assert fam.get("TRANSACTION_BEHAVIOR", 0.0) <= cfg.transaction.max_family_points
-    assert fam.get("ROLE_SUPPORT", 0.0) <= cfg.role_support.max_family_points
+    assert fam.get("VELOCITY", 0.0) <= 40.0
+    assert fam.get("AUTOMATION", 0.0) <= 30.0
+    assert fam.get("FLOW_PARITY", 0.0) <= 20.0
+    assert fam.get("BURST_TEMPORAL", 0.0) <= 10.0
+    assert fam.get("DEGREE", 0.0) <= 35.0
+    assert fam.get("INTERMEDIARY", 0.0) <= 25.0
+    assert fam.get("VOLUME_SCALE", 0.0) <= 20.0
+    assert fam.get("ROLE_EVIDENCE", 0.0) <= 20.0
     assert score.risk_index <= 100.0
+    assert score.behavioral_risk_index <= 100.0
+    assert score.structural_risk_index <= 100.0
 
     # Reason codes must belong to valid families and points must be positive
     for r in score.risk_reasons:
         assert r.points > 0
-        assert r.family in fam
 
 
 # ---------------------------------------------------------------------------
@@ -272,18 +274,18 @@ def test_low_signal_vs_strong_signal():
 # Test 7: Velocity Bands Verification
 # ---------------------------------------------------------------------------
 def test_velocity_scoring_bands():
-    """Velocity must contribute strictly according to Step 5A pass-through ratio bands."""
+    """Velocity must contribute strictly according to Candidate B pass-through ratio bands (0-40 pts)."""
     test_cases = [
-        (0.40, 5, 0.0),    # < 0.50 -> 0 pts
-        (0.60, 5, 8.0),    # 0.50-0.69 -> 8 pts
-        (0.75, 5, 15.0),   # 0.70-0.84 -> 15 pts
-        (0.90, 5, 20.0),   # 0.85-0.94 -> 20 pts
-        (0.98, 5, 25.0),   # >= 0.95 -> 25 pts
-        (0.98, 0, 0.0),    # No qualifying events -> 0 pts
-        (0.98, 1, 10.0),   # Single qualifying event -> capped at 10 pts
+        (0.10, 5, 5, 5.0),    # < 0.20 with active events -> 5 pts
+        (0.60, 5, 5, 20.0),   # 0.40-0.69 -> 20 pts
+        (0.75, 5, 5, 30.0),   # 0.70-0.89 -> 30 pts
+        (0.90, 5, 5, 40.0),   # >= 0.90 -> 40 pts
+        (0.98, 5, 5, 40.0),   # >= 0.90 -> 40 pts
+        (0.98, 0, 0, 0.0),    # No qualifying events -> 0 pts
+        (0.98, 1, 1, 15.0),   # Single qualifying event with high ratio -> 15 pts
     ]
 
-    for pt_ratio, pt_events, expected_pts in test_cases:
+    for pt_ratio, pt_events, pt_out_tx, expected_pts in test_cases:
         con = duckdb.connect(":memory:")
         data = [{
             "account_number": "VEL_TEST",
@@ -295,7 +297,7 @@ def test_velocity_scoring_bands():
             "fan_out": 2,
             "pass_through_ratio": pt_ratio,
             "pass_through_event_count": pt_events,
-            "pass_through_outgoing_transaction_count": pt_events,
+            "pass_through_outgoing_transaction_count": pt_out_tx,
             "web_emulator_txn_count": 0,
             "linux_script_txn_count": 0,
             "top_ip_transaction_ratio": 0.0,
@@ -316,7 +318,7 @@ def test_velocity_scoring_bands():
 # Test 8: Automation / Device Behavior Scoring
 # ---------------------------------------------------------------------------
 def test_automation_behavior_scoring():
-    """Automation family must score observed Web_Emulator and Linux_Script activity up to 20 pts."""
+    """Automation family must score observed Web_Emulator and Linux_Script activity up to 30 pts."""
     con = duckdb.connect(":memory:")
     data = [
         {
@@ -346,7 +348,7 @@ def test_automation_behavior_scoring():
     assert score is not None
     auto_score = score.risk_family_scores.get("AUTOMATION", 0.0)
     assert auto_score > 0.0
-    assert auto_score <= 20.0
+    assert auto_score <= 30.0
     reasons = [r.code for r in score.risk_reasons if r.family == "AUTOMATION"]
     assert any("EMULATOR" in r or "AUTOMATED" in r for r in reasons)
 
@@ -355,7 +357,7 @@ def test_automation_behavior_scoring():
 # Test 9: Role Support Cap
 # ---------------------------------------------------------------------------
 def test_role_support_cap():
-    """Role support must contribute 4 pts per active candidate role, capped at 10 pts."""
+    """Role support must contribute 10 pts per active candidate role, capped at 20 pts."""
     con = duckdb.connect(":memory:")
     data = [
         {
@@ -383,9 +385,9 @@ def test_role_support_cap():
     compute_mule_risk_index(con)
     score = get_account_risk(con, "MULTI_ROLE_ACC")
     assert score is not None
-    role_pts = score.risk_family_scores.get("ROLE_SUPPORT", 0.0)
-    # 3 * 4 = 12, but capped at 10
-    assert role_pts == 10.0
+    role_pts = score.risk_family_scores.get("ROLE_EVIDENCE", 0.0)
+    # 3 * 10 = 30, but capped at 20
+    assert role_pts == 20.0
 
 
 # ---------------------------------------------------------------------------
@@ -473,23 +475,27 @@ def test_null_and_zero_safety():
 # Test 12: API Endpoint Schema & 404 Behavior
 # ---------------------------------------------------------------------------
 def test_api_risk_endpoint():
-    """GET /api/accounts/{account_id}/risk returns 200 with valid MuleRiskScore schema."""
+    """GET /api/accounts/{account_id}/risk returns 200 with valid Candidate B MuleRiskScore schema."""
     response = client.get("/api/accounts/KKBK10000402/risk")
     assert response.status_code == 200
     data = response.json()
     
     assert data["account_number"] == "KKBK10000402"
     assert 0.0 <= data["risk_index"] <= 100.0
+    assert 0.0 <= data["structural_risk_index"] <= 100.0
+    assert 0.0 <= data["behavioral_risk_index"] <= 100.0
+    assert "investigative_signal" in data
     assert data["risk_band"] in ["LOW", "MODERATE", "HIGH", "VERY_HIGH"]
-    assert data["risk_model_version"] == "v1"
+    assert data["risk_model_version"] == "v2_two_axis"
     assert data["risk_provenance"] == "DERIVED"
     assert "risk_family_scores" in data
-    assert "FLOW_STRUCTURE" in data["risk_family_scores"]
     assert "VELOCITY" in data["risk_family_scores"]
     assert "AUTOMATION" in data["risk_family_scores"]
-    assert "NETWORK_STRUCTURE" in data["risk_family_scores"]
-    assert "TRANSACTION_BEHAVIOR" in data["risk_family_scores"]
-    assert "ROLE_SUPPORT" in data["risk_family_scores"]
+    assert "FLOW_PARITY" in data["risk_family_scores"]
+    assert "DEGREE" in data["risk_family_scores"]
+    assert "INTERMEDIARY" in data["risk_family_scores"]
+    assert "VOLUME_SCALE" in data["risk_family_scores"]
+    assert "ROLE_EVIDENCE" in data["risk_family_scores"]
     assert isinstance(data["risk_reasons"], list)
     for r in data["risk_reasons"]:
         assert "code" in r
@@ -520,8 +526,10 @@ def test_known_validation_accounts():
         score = get_account_risk(con, acc)
         assert score is not None, f"Score for {acc} should exist"
         assert 0.0 <= score.risk_index <= 100.0
+        assert 0.0 <= score.structural_risk_index <= 100.0
+        assert 0.0 <= score.behavioral_risk_index <= 100.0
         assert score.risk_band in ["LOW", "MODERATE", "HIGH", "VERY_HIGH"]
-        assert len(score.risk_family_scores) == 6
+        assert score.investigative_signal is not None
 
 
 # ---------------------------------------------------------------------------

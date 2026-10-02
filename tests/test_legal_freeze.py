@@ -139,11 +139,16 @@ def _make_test_db(rows: list) -> duckdb.DuckDBPyConnection:
             'HIGH' AS risk_band,
             '[]' AS risk_reasons,
             '{"FLOW_STRUCTURE": 10.0, "VELOCITY": 15.0, "AUTOMATION": 5.0, "NETWORK_STRUCTURE": 5.0, "TRANSACTION_BEHAVIOR": 5.0, "ROLE_SUPPORT": 2.0}' AS risk_family_scores,
-            'v1' AS risk_model_version,
+            'v2_two_axis' AS risk_model_version,
             NULL::TIMESTAMP AS risk_computed_at,
             'DERIVED' AS risk_provenance,
             NULL::VARCHAR AS risk_factors,
-            FALSE AS cycle_indicator
+            FALSE AS cycle_indicator,
+            30.0 AS structural_risk_index,
+            20.0 AS behavioral_risk_index,
+            'LOW CURRENT INDICATOR' AS investigative_signal,
+            'Both indicators currently limited.' AS investigative_summary,
+            FALSE AS multi_modal_confirmation
         FROM accounts_dimension;
     """)
     return con

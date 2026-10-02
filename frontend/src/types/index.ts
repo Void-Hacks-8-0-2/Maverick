@@ -234,6 +234,11 @@ export interface MuleRiskReason {
 export interface MuleRiskScore {
   account_number: string;
   risk_index: number;
+  structural_risk_index?: number;
+  behavioral_risk_index?: number;
+  multi_modal_confirmation?: boolean;
+  investigative_signal?: string;
+  investigative_summary?: string;
   risk_band: 'LOW' | 'MODERATE' | 'HIGH' | 'VERY_HIGH';
   risk_model_version: string;
   risk_provenance: string;
@@ -925,7 +930,11 @@ export interface LegalDraftResponse {
 export interface MuleCandidateItem {
   account_number: string;
   risk_index: number;
+  structural_risk_index?: number;
+  behavioral_risk_index?: number;
   risk_band: 'LOW' | 'MODERATE' | 'HIGH' | 'VERY_HIGH' | string;
+  investigative_signal?: string;
+  multi_modal_confirmation?: boolean;
   layer1_candidate: boolean;
   layer2_candidate: boolean;
   layer3_candidate: boolean;

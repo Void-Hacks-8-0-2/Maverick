@@ -75,7 +75,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     {
       group: 'INVESTIGATE',
       items: [
-        { path: '/victim',       label: 'Victim Investigation',  icon: ShieldAlert },
+        { path: '/victim',       label: 'Investigation',         icon: ShieldAlert },
         { path: '/graph',        label: 'Network Intelligence',  icon: Network },
         { path: '/timeline',     label: 'Forensic Timeline',     icon: Clock },
         { path: '/transactions', label: 'Transaction Explorer',  icon: ListFilter },
@@ -95,7 +95,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const getActiveModuleTitle = () => {
     const p = location.pathname;
     if (p === '/dashboard' || p === '/command') return 'Command Center';
-    if (p.startsWith('/victim'))       return 'Victim Investigation';
+    if (p.startsWith('/victim'))       return 'Investigation';
     if (p.startsWith('/graph') || p.startsWith('/investigate')) return 'Network Intelligence';
     if (p.startsWith('/timeline'))     return 'Forensic Timeline';
     if (p.startsWith('/transactions')) return 'Transaction Explorer';

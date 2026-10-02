@@ -16,15 +16,16 @@ import {
   Loader2,
   Scale
 } from 'lucide-react';
-import { getVictimInvestigation, createCaseFile, getCachedVictimInvestigation } from '../api/accounts';
+import { getVictimInvestigation, createCaseFile, getCachedVictimInvestigation, getAccountFeatures, getAccountRisk } from '../api/accounts';
 import type {
   VictimInvestigationResponse,
   CaseFileResponse,
   GraphNode,
-  GraphEdge
+  GraphEdge,
+  AccountFeatures,
+  MuleRiskScore
 } from '../types';
 import { NetworkGraphViewer } from '../components/NetworkGraphViewer';
-import { RiskBadge } from '../components/RiskBadge';
 import { RoleBadge } from '../components/RoleBadge';
 
 const PRESET_ACCOUNTS = ['KKBK10000402', 'PYTM10001005', 'AIRP10000595', 'PUNB10000806'];
@@ -39,10 +40,12 @@ export const VictimInvestigation: React.FC = () => {
   const [inputAccount, setInputAccount] = useState(initialAccount);
   const [activeAccount, setActiveAccount] = useState<string>(initialAccount);
   const [maxHops, setMaxHops] = useState<number>(4);
-  const [horizonFilter, setHorizonFilter] = useState<number | undefined>(undefined);
+  const horizonFilter = undefined;
 
   const initialCached = getCachedVictimInvestigation(initialAccount, 4, undefined);
   const [data, setData] = useState<VictimInvestigationResponse | null>(() => initialCached || null);
+  const [shellFeatures, setShellFeatures] = useState<AccountFeatures | null>(null);
+  const [shellRisk, setShellRisk] = useState<MuleRiskScore | null>(null);
   const [loading, setLoading] = useState<boolean>(() => !initialCached);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'graph' | 'edges' | 'terminals' | 'transactions' | 'risk'>('graph');
@@ -74,6 +77,8 @@ export const VictimInvestigation: React.FC = () => {
       setError(null);
       setCaseFileData(null);
       setCaseFileError(null);
+      setShellFeatures(null);
+      setShellRisk(null);
       return;
     }
 
@@ -82,6 +87,19 @@ export const VictimInvestigation: React.FC = () => {
     setCaseFileData(null);
     setCaseFileError(null);
     setData(null);
+    setShellFeatures(null);
+    setShellRisk(null);
+
+    // Immediate shell: fetch pre-materialized account features & risk score in parallel (~50ms)
+    // Never gate the entire Investigation page behind expensive multi-hop FIFO attribution
+    Promise.all([
+      getAccountFeatures(activeAccount).catch(() => null),
+      getAccountRisk(activeAccount).catch(() => null)
+    ]).then(([feat, rsk]) => {
+      if (cancelled) return;
+      if (feat) setShellFeatures(feat);
+      if (rsk) setShellRisk(rsk);
+    });
 
     getVictimInvestigation(activeAccount, maxHops, horizonFilter)
       .then((res) => {
@@ -171,6 +189,53 @@ export const VictimInvestigation: React.FC = () => {
     }));
   }, [data]);
 
+  // Derived shell variables for immediate dossier rendering (<50ms)
+  const activeSubject = data?.account_number || shellFeatures?.account_number || activeAccount;
+
+  const isL3 = data?.roles?.l3_terminal_candidate ?? shellFeatures?.layer3_candidate ?? false;
+  const isL2 = data?.roles?.l2_distributor_candidate ?? shellFeatures?.layer2_candidate ?? false;
+  const isL1 = data?.roles?.l1_collector_candidate ?? shellFeatures?.layer1_candidate ?? false;
+
+  const primaryRoleLabel = data?.roles?.primary_role_label || (
+    isL3 ? 'L3 Terminal Candidate' :
+    isL2 ? 'L2 Distributor Candidate' :
+    isL1 ? 'L1 Collector Candidate' :
+    shellFeatures ? 'Standard Entity' : null
+  );
+
+  const fanIn = data?.roles?.fan_in ?? shellFeatures?.fan_in;
+  const fanOut = data?.roles?.fan_out ?? shellFeatures?.fan_out;
+
+  const structuralScore = data?.risk?.structural_risk_index ?? shellRisk?.structural_risk_index;
+  const behavioralScore = data?.risk?.behavioral_risk_index ?? shellRisk?.behavioral_risk_index;
+  const riskScore = data?.risk?.risk_index ?? shellRisk?.risk_index ?? shellFeatures?.mule_risk_index;
+  const riskBand = data?.risk?.risk_band ?? shellRisk?.risk_band ?? 'LOW';
+
+  const multiModal = data?.risk?.multi_modal_confirmation ?? shellRisk?.multi_modal_confirmation ?? (
+    (structuralScore !== undefined && structuralScore !== null && structuralScore >= 50) &&
+    (behavioralScore !== undefined && behavioralScore !== null && behavioralScore >= 50)
+  );
+
+  const investigativeSignal = data?.risk?.investigative_signal ?? shellRisk?.investigative_signal ?? (
+    multiModal ? 'MULTI-MODAL EVIDENCE' : `${riskBand} INDICATOR`
+  );
+
+  const investigativeSummary = data?.risk?.investigative_summary ?? shellRisk?.investigative_summary ?? (
+    multiModal
+      ? 'Independent structural and behavioral indicators are both elevated.'
+      : (structuralScore !== undefined && structuralScore !== null && structuralScore >= 50)
+      ? 'Elevated structural network indicators; behavioral indicators limited.'
+      : (behavioralScore !== undefined && behavioralScore !== null && behavioralScore >= 50)
+      ? 'Elevated velocity/behavioral indicators; structural indicators limited.'
+      : 'Baseline forensic evaluation.'
+  );
+
+  const incomingVol = data?.account_summary?.observed_incoming_volume ?? shellFeatures?.incoming_volume;
+  const outgoingVol = data?.account_summary?.observed_outgoing_volume ?? shellFeatures?.outgoing_volume;
+  const netDelta = data?.account_summary?.observed_net_flow_delta ?? shellFeatures?.net_flow_delta;
+  const ptRatio = data?.velocity?.pass_through_ratio ?? shellFeatures?.pass_through_ratio;
+  const ptCount = data?.velocity?.qualifying_event_count ?? shellFeatures?.pass_through_event_count;
+
   return (
     <div className="space-y-6">
       {/* Top Search & Filter Bar */}
@@ -183,8 +248,11 @@ export const VictimInvestigation: React.FC = () => {
               value={inputAccount}
               onChange={(e) => setInputAccount(e.target.value)}
               placeholder="Enter subject account number (e.g., KKBK10000402)..."
-              className="w-full bg-white border border-slate-300 focus:border-violet-600 rounded-lg pl-9 pr-3 py-2 text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none transition"
+              className="w-full bg-white border border-slate-300 focus:border-violet-600 rounded-lg pl-9 pr-9 py-2 text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none transition"
             />
+            {loading && (
+              <RefreshCw className="w-4 h-4 text-violet-600 animate-spin absolute right-3 top-1/2 -translate-y-1/2" />
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -199,36 +267,6 @@ export const VictimInvestigation: React.FC = () => {
               <option value={4}>4 Hops (Default)</option>
               <option value={5}>5 Hops</option>
             </select>
-
-            <select
-              value={horizonFilter === undefined ? '' : horizonFilter}
-              onChange={(e) => setHorizonFilter(e.target.value ? Number(e.target.value) : undefined)}
-              className="bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:border-violet-600"
-            >
-              <option value="">All Horizons</option>
-              <option value={3600}>1 Hour</option>
-              <option value={21600}>6 Hours</option>
-              <option value={86400}>24 Hours</option>
-              <option value={604800}>7 Days</option>
-            </select>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-violet-700 hover:bg-violet-600 text-white font-semibold px-4 py-2 rounded-lg text-xs font-mono flex items-center gap-1.5 transition shrink-0 disabled:opacity-50 shadow-sm"
-            >
-              {loading ? (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>ANALYZING...</span>
-                </>
-              ) : (
-                <>
-                  <Search className="w-3.5 h-3.5" />
-                  <span>TRACE</span>
-                </>
-              )}
-            </button>
           </div>
         </form>
 
@@ -276,15 +314,29 @@ export const VictimInvestigation: React.FC = () => {
                     INVESTIGATION SUBJECT
                   </span>
                   <div className="text-2xl sm:text-3xl font-semibold font-mono text-slate-900 tracking-tight">
-                    {data?.account_number || activeAccount}
+                    {activeSubject}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 pt-1 lg:pt-3">
-                  {data ? (
+                  {primaryRoleLabel ? (
                     <>
-                      <RiskBadge score={data.risk.risk_index} band={data.risk.risk_band} size="md" />
-                      <RoleBadge role={data.roles.primary_role_label || 'L3 CANDIDATE'} size="md" />
+                      <RoleBadge role={primaryRoleLabel} size="md" />
+                      {multiModal ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-mono font-bold bg-violet-100 text-violet-800 border border-violet-300">
+                          MULTI-MODAL EVIDENCE
+                        </span>
+                      ) : (
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-mono font-semibold border ${
+                          riskBand === 'VERY_HIGH' || riskBand === 'HIGH'
+                            ? 'bg-rose-50 border-rose-200 text-rose-800'
+                            : (structuralScore ?? 0) >= 50 || (behavioralScore ?? 0) >= 50
+                            ? 'bg-amber-50 border-amber-200 text-amber-800'
+                            : 'bg-slate-50 border-slate-200 text-slate-700'
+                        }`}>
+                          {investigativeSignal}
+                        </span>
+                      )}
                     </>
                   ) : (
                     <>
@@ -322,9 +374,8 @@ export const VictimInvestigation: React.FC = () => {
 
                 <button
                   type="button"
-                  disabled={!data}
-                  onClick={() => data && navigate(`/timeline?account_id=${data.account_number}`)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-mono text-xs transition disabled:opacity-50"
+                  onClick={() => navigate(`/timeline?account_id=${activeSubject}`)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-mono text-xs transition"
                 >
                   <Clock className="w-3.5 h-3.5 text-slate-400" />
                   <span>Timeline</span>
@@ -332,9 +383,8 @@ export const VictimInvestigation: React.FC = () => {
 
                 <button
                   type="button"
-                  disabled={!data}
-                  onClick={() => data && navigate(`/transactions?account=${data.account_number}`)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-mono text-xs transition disabled:opacity-50"
+                  onClick={() => navigate(`/transactions?account=${activeSubject}`)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-mono text-xs transition"
                 >
                   <FileText className="w-3.5 h-3.5 text-slate-400" />
                   <span>Transactions</span>
@@ -342,9 +392,8 @@ export const VictimInvestigation: React.FC = () => {
 
                 <button
                   type="button"
-                  disabled={!data}
-                  onClick={() => data && navigate(`/legal-freeze?account=${data.account_number}`)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-mono text-xs transition disabled:opacity-50"
+                  onClick={() => navigate(`/legal-freeze?account=${activeSubject}`)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-mono text-xs transition"
                 >
                   <Scale className="w-3.5 h-3.5 text-slate-400" />
                   <span>Draft Order</span>
@@ -352,9 +401,8 @@ export const VictimInvestigation: React.FC = () => {
 
                 <button
                   type="button"
-                  disabled={!data}
-                  onClick={() => data && navigate(`/account/${data.account_number}`)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-mono text-xs transition disabled:opacity-50"
+                  onClick={() => navigate(`/account/${activeSubject}`)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-mono text-xs transition"
                 >
                   <span>Profile</span>
                   <ExternalLink className="w-3 h-3 text-slate-400" />
@@ -362,13 +410,120 @@ export const VictimInvestigation: React.FC = () => {
               </div>
             </div>
 
+            {/* Two-Axis Decoupled Forensic Evidence Card */}
+            {(data || shellRisk || shellFeatures) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 bg-slate-50/70 p-3.5 rounded-lg border border-slate-200">
+                {/* Card 1: Network Role */}
+                <div className="bg-white p-3.5 rounded-md border border-slate-200 space-y-1 shadow-xs">
+                  <span className="text-[10px] font-mono tracking-wider text-slate-500 uppercase font-semibold block">
+                    NETWORK ROLE
+                  </span>
+                  <div className="text-base font-bold font-mono text-slate-900">
+                    {primaryRoleLabel || 'Candidate'}
+                  </div>
+                  <div className="text-[11px] font-mono text-slate-500 pt-0.5">
+                    {fanIn !== undefined && fanOut !== undefined
+                      ? `${fanIn} incoming senders → ${fanOut} outgoing receivers`
+                      : 'Computing topology footprint...'}
+                  </div>
+                  {isL3 && (
+                    <div className="pt-1.5 border-t border-slate-100 text-[10px]">
+                      <Link
+                        to={`/account/${activeSubject}`}
+                        className="text-violet-700 hover:underline flex items-center gap-1 font-semibold"
+                      >
+                        <span>View L3 Terminal Evidence &rarr;</span>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+
+                {/* Card 2: Structural Risk */}
+                <div className="bg-white p-3.5 rounded-md border border-slate-200 space-y-1 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono tracking-wider text-slate-500 uppercase font-semibold block">
+                      STRUCTURAL RISK
+                    </span>
+                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                      (structuralScore ?? 0) >= 50
+                        ? 'bg-amber-50 border-amber-200 text-amber-800'
+                        : 'bg-slate-100 border-slate-200 text-slate-600'
+                    }`}>
+                      {(structuralScore ?? 0) >= 50 ? 'ELEVATED' : 'LIMITED'}
+                    </span>
+                  </div>
+                  <div className="text-xl font-bold font-mono text-slate-900">
+                    {structuralScore !== undefined && structuralScore !== null
+                      ? structuralScore.toFixed(1)
+                      : '—'}{' '}
+                    <span className="text-xs font-normal text-slate-400">/ 100</span>
+                  </div>
+                  <div className="text-[11px] font-mono text-slate-500 italic">
+                    Network structure / intermediary footprint
+                  </div>
+                </div>
+
+                {/* Card 3: Behavioral Risk */}
+                <div className="bg-white p-3.5 rounded-md border border-slate-200 space-y-1 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono tracking-wider text-slate-500 uppercase font-semibold block">
+                      BEHAVIORAL RISK
+                    </span>
+                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                      (behavioralScore ?? 0) >= 50
+                        ? 'bg-amber-50 border-amber-200 text-amber-800'
+                        : 'bg-slate-100 border-slate-200 text-slate-600'
+                    }`}>
+                      {(behavioralScore ?? 0) >= 50 ? 'ELEVATED' : 'LIMITED'}
+                    </span>
+                  </div>
+                  <div className="text-xl font-bold font-mono text-slate-900">
+                    {behavioralScore !== undefined && behavioralScore !== null
+                      ? behavioralScore.toFixed(1)
+                      : '—'}{' '}
+                    <span className="text-xs font-normal text-slate-400">/ 100</span>
+                  </div>
+                  <div className="text-[11px] font-mono text-slate-500 italic">
+                    Velocity / automation / temporal behavior
+                  </div>
+                </div>
+
+                {/* Card 4: Composite Investigative Signal */}
+                <div className="bg-white p-3.5 rounded-md border border-slate-200 space-y-1 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono tracking-wider text-slate-500 uppercase font-semibold block">
+                      COMPOSITE SIGNAL
+                    </span>
+                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                      multiModal
+                        ? 'bg-violet-100 border-violet-300 text-violet-800'
+                        : riskBand === 'VERY_HIGH' || riskBand === 'HIGH'
+                        ? 'bg-rose-50 border-rose-200 text-rose-800'
+                        : riskBand === 'MODERATE'
+                        ? 'bg-amber-50 border-amber-200 text-amber-800'
+                        : 'bg-slate-100 border-slate-200 text-slate-600'
+                    }`}>
+                      {multiModal ? 'MULTI-MODAL' : riskBand}
+                    </span>
+                  </div>
+                  <div className="text-xl font-bold font-mono text-slate-900">
+                    {riskScore !== undefined && riskScore !== null ? riskScore.toFixed(1) : '—'}{' '}
+                    <span className="text-xs font-normal text-slate-400">/ 100</span>
+                  </div>
+                  <div className="text-[11px] font-mono text-slate-600 leading-tight">
+                    {investigativeSummary}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Row 2: Financial Metrics & Forensic Telemetry Strip */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-xs font-mono">
               <div className="space-y-0.5">
                 <span className="text-[10px] text-slate-500 uppercase block tracking-wider">ROOT INFLOW</span>
-                {data ? (
+                {incomingVol !== undefined ? (
                   <span className="text-base sm:text-lg font-semibold text-emerald-700 tabular-nums">
-                    ₹{data.account_summary.observed_incoming_volume.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    ₹{incomingVol.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 ) : (
                   <div className="h-6 w-24 bg-slate-100 rounded animate-pulse my-1" />
@@ -378,9 +533,9 @@ export const VictimInvestigation: React.FC = () => {
 
               <div className="space-y-0.5">
                 <span className="text-[10px] text-slate-500 uppercase block tracking-wider">ROOT OUTFLOW</span>
-                {data ? (
+                {outgoingVol !== undefined ? (
                   <span className="text-base sm:text-lg font-semibold text-rose-700 tabular-nums">
-                    ₹{data.account_summary.observed_outgoing_volume.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    ₹{outgoingVol.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 ) : (
                   <div className="h-6 w-24 bg-slate-100 rounded animate-pulse my-1" />
@@ -390,10 +545,10 @@ export const VictimInvestigation: React.FC = () => {
 
               <div className="space-y-0.5">
                 <span className="text-[10px] text-slate-500 uppercase block tracking-wider">OBSERVED NET DELTA</span>
-                {data ? (
+                {netDelta !== undefined ? (
                   <span className="text-base sm:text-lg font-semibold text-slate-900 tabular-nums">
-                    {data.account_summary.observed_net_flow_delta >= 0 ? '+' : ''}
-                    ₹{data.account_summary.observed_net_flow_delta.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    {netDelta >= 0 ? '+' : ''}
+                    ₹{netDelta.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 ) : (
                   <div className="h-6 w-24 bg-slate-100 rounded animate-pulse my-1" />
@@ -408,21 +563,27 @@ export const VictimInvestigation: React.FC = () => {
                     ₹{data.trace.total_attributed_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 ) : (
-                  <div className="h-6 w-24 bg-slate-100 rounded animate-pulse my-1" />
+                  <span className="text-xs font-semibold text-slate-500 italic block py-1">
+                    Expanding multi-hop evidence...
+                  </span>
                 )}
                 <span className="text-[10px] text-slate-400 block">Cumulative downstream</span>
               </div>
 
               <div className="space-y-0.5">
                 <span className="text-[10px] text-slate-500 uppercase block tracking-wider">PASS-THROUGH VELOCITY</span>
-                {data ? (
+                {ptRatio !== undefined && ptRatio !== null ? (
                   <span className="text-base sm:text-lg font-semibold text-amber-700 tabular-nums">
-                    {(data.velocity.pass_through_ratio * 100).toFixed(0)}%
+                    {(ptRatio * 100).toFixed(0)}%
                   </span>
                 ) : (
                   <div className="h-6 w-24 bg-slate-100 rounded animate-pulse my-1" />
                 )}
-                <span className="text-[10px] text-slate-400 block">{data ? `${data.velocity.qualifying_event_count} paired (3-15m)` : 'Calculating...'}</span>
+                <span className="text-[10px] text-slate-400 block">
+                  {ptCount !== undefined && ptCount !== null
+                    ? `${ptCount} paired (3-15m)`
+                    : 'Calculating...'}
+                </span>
               </div>
 
               <div className="space-y-0.5">
@@ -432,9 +593,17 @@ export const VictimInvestigation: React.FC = () => {
                     {data.trace.total_hops_found} Hops &bull; {data.terminals.length} Terminal
                   </span>
                 ) : (
-                  <div className="h-6 w-24 bg-slate-100 rounded animate-pulse my-1" />
+                  <span className="text-sm font-semibold text-violet-700 block py-0.5">
+                    {maxHops} Hops (Building…)
+                  </span>
                 )}
-                <span className="text-[10px] text-slate-400 block">{data ? `${graphNodes.length} nodes • ${graphEdges.length} links` : 'Traversing graph...'}</span>
+                <span className="text-[10px] text-slate-400 block">
+                  {data
+                    ? `${graphNodes.length} nodes • ${graphEdges.length} links`
+                    : fanOut !== undefined
+                    ? `Scanning ${fanOut} outbound pathways...`
+                    : 'Traversing graph...'}
+                </span>
               </div>
             </div>
 
@@ -448,9 +617,15 @@ export const VictimInvestigation: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs font-mono text-slate-500 flex items-center gap-2">
-                <RefreshCw className="w-3.5 h-3.5 animate-spin text-violet-600 shrink-0" />
-                <span>Synthesizing multi-hop forensic narrative and cross-referencing counterparty flows...</span>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs font-mono text-slate-600 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-violet-600 shrink-0" />
+                  <span>
+                    Synthesizing multi-hop forensic narrative
+                    {fanOut !== undefined ? ` and expanding multi-hop evidence across ${fanOut} counterparty pathways...` : '...'}
+                  </span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-normal">Computation in progress</span>
               </div>
             )}
           </div>
@@ -546,7 +721,7 @@ export const VictimInvestigation: React.FC = () => {
                 }`}
               >
                 <Network className="w-3.5 h-3.5" />
-                <span>Money-Flow Vector Graph ({graphNodes.length} nodes)</span>
+                <span>Money-Flow Vector Graph {data ? `(${graphNodes.length} nodes)` : '(Building…)'}</span>
               </button>
 
               <button
@@ -585,7 +760,7 @@ export const VictimInvestigation: React.FC = () => {
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span>Subject Transactions ({data ? data.victim_transactions.length : '...'})</span>
+                <span>Subject Transactions ({data ? data.victim_transactions.length : (shellFeatures ? shellFeatures.incoming_txn_count + shellFeatures.outgoing_txn_count : '...')})</span>
               </button>
 
               <button
@@ -639,18 +814,30 @@ export const VictimInvestigation: React.FC = () => {
                         </div>
                       )
                     ) : (
-                      <div className="flex flex-col items-center justify-center h-[500px] bg-slate-50/50 space-y-4">
-                        <div className="relative">
-                          <div className="w-14 h-14 rounded-full border-2 border-violet-200 border-t-violet-600 animate-spin" />
-                          <Network className="w-6 h-6 text-violet-600 absolute inset-0 m-auto" />
-                        </div>
-                        <div className="text-center space-y-1">
-                          <p className="text-xs font-mono font-semibold text-slate-800">
-                            Constructing Money-Flow Vector Graph...
-                          </p>
-                          <p className="text-[11px] font-mono text-slate-500 max-w-sm">
-                            Traversing 4-hop FIFO paths, computing velocity deltas, and classifying terminal sinks.
-                          </p>
+                      <div className="flex flex-col items-center justify-center h-[500px] bg-slate-50/50 p-6 text-center">
+                        <div className="max-w-md w-full bg-white border border-slate-200 rounded-lg p-5 shadow-xs space-y-3">
+                          <div className="flex items-center justify-center gap-2 text-violet-700">
+                            <RefreshCw className="w-4 h-4 animate-spin text-violet-600" />
+                            <span className="text-xs font-mono font-semibold tracking-wide uppercase">
+                              Building forensic network…
+                            </span>
+                          </div>
+                          <div className="space-y-1 font-mono text-xs text-slate-600">
+                            <p className="font-medium text-slate-800">
+                              Expanding multi-hop evidence
+                              {fanOut !== undefined ? ` across ${fanOut} outbound counterparty pathways` : ''}
+                            </p>
+                            <p className="text-[11px] text-slate-500">
+                              Computing deterministic FIFO fund flows ({maxHops} hops) &bull; Page shell is fully interactive
+                            </p>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div className="bg-violet-600 h-1.5 rounded-full w-2/5 animate-pulse" />
+                          </div>
+                          <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-100">
+                            <span>Target: {activeSubject}</span>
+                            <span>{shellFeatures ? `${shellFeatures.unique_counterparties} Counterparties` : 'Inspecting topology'}</span>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -784,8 +971,24 @@ export const VictimInvestigation: React.FC = () => {
                                 </span>
                               </div>
                             )}
+
+                            {t.reason_codes && t.reason_codes.length > 0 && (
+                              <div className="pt-2 border-t border-slate-100 space-y-1">
+                                <span className="text-[10px] font-semibold text-rose-800 uppercase block tracking-wider">
+                                  Observed terminal indicators:
+                                </span>
+                                {t.reason_codes.map((rc, idx) => (
+                                  <div key={idx} className="text-[10px] text-slate-600 leading-snug">
+                                    &bull; {rc}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         ))}
+                        <div className="col-span-full text-[10px] font-mono text-slate-500 pt-2 border-t border-slate-200">
+                          These are observed transaction indicators associated with terminal/cash-out behavior. They are investigative evidence, not a determination of criminal intent.
+                        </div>
                       </div>
                     )
                   ) : (
@@ -859,29 +1062,182 @@ export const VictimInvestigation: React.FC = () => {
                 <div className="space-y-6">
                   {data ? (
                     <>
-                      {/* Step 5B Risk Family Breakdown */}
-                      <div className="space-y-3">
-                        <h3 className="text-xs font-mono font-semibold text-slate-900 uppercase tracking-wider">
-                          Step 5B Risk Family Contribution ({data.risk.risk_index.toFixed(1)} / 100)
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
-                          {Object.entries(data.risk.risk_family_scores || {}).map(([family, score]) => {
-                            const numericScore = typeof score === 'number' ? score : Number(score) || 0;
-                            return (
-                              <div key={family} className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1.5">
-                                <div className="flex items-center justify-between text-slate-800">
-                                  <span className="capitalize">{family.toLowerCase().replace('_', ' ')}</span>
-                                  <span className="font-semibold text-violet-700 tabular-nums">+{numericScore.toFixed(1)} pts</span>
-                                </div>
-                                <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                                  <div
-                                    className="bg-violet-600 h-1.5 rounded-full"
-                                    style={{ width: `${Math.min(100, numericScore * 4)}%` }}
-                                  />
-                                </div>
+                      {/* Two-Axis Decoupled Model Explanatory Architecture */}
+                      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs font-mono text-slate-700 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-slate-900 uppercase text-[10px] tracking-wider">
+                            CANDIDATE B TWO-AXIS FORENSIC ARCHITECTURE
+                          </span>
+                          <span className="text-[10px] font-bold text-violet-700 bg-violet-50 px-2 py-0.5 rounded border border-violet-200">
+                            COMPOSITE: {data.risk.risk_index.toFixed(1)} / 100
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                          Independent multi-modal model decoupling network intermediary topology from rapid automated dissipation velocity.
+                          Formula: <code className="bg-white px-1 py-0.5 rounded border border-slate-200 text-slate-800">0.5 &times; Behavioral ({data.risk.behavioral_risk_index?.toFixed(1) ?? 0}) + 0.5 &times; Structural ({data.risk.structural_risk_index?.toFixed(1) ?? 0}) + {data.risk.multi_modal_confirmation ? '10 (Multi-Modal Bonus)' : '0'}</code>.
+                        </p>
+                      </div>
+
+                      {/* Structural vs Behavioral Breakdown Panels */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {/* Structural Risk Panel */}
+                        <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-3 font-mono">
+                          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <div>
+                              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block">AXIS 2</span>
+                              <h4 className="text-sm font-bold text-slate-900">STRUCTURAL RISK</h4>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-lg font-bold text-slate-900">{data.risk.structural_risk_index?.toFixed(1) ?? 0}</span>
+                              <span className="text-xs text-slate-400"> / 100</span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2.5 text-xs">
+                            {/* Degree */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between items-center text-[11px]">
+                                <span className="text-slate-700">Network Degree / Breadth</span>
+                                <span className="font-semibold text-violet-700 tabular-nums">
+                                  {data.risk.risk_family_scores['STRUCTURAL_DEGREE'] ?? 0} <span className="text-slate-400 font-normal">/ 35</span>
+                                </span>
                               </div>
-                            );
-                          })}
+                              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className="bg-violet-600 h-full rounded-full"
+                                  style={{ width: `${Math.min(100, (((data.risk.risk_family_scores['STRUCTURAL_DEGREE'] ?? 0) / 35) * 100))}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Intermediary */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between items-center text-[11px]">
+                                <span className="text-slate-700">Intermediary & Asymmetry</span>
+                                <span className="font-semibold text-violet-700 tabular-nums">
+                                  {data.risk.risk_family_scores['STRUCTURAL_INTERMEDIARY'] ?? 0} <span className="text-slate-400 font-normal">/ 25</span>
+                                </span>
+                              </div>
+                              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className="bg-violet-600 h-full rounded-full"
+                                  style={{ width: `${Math.min(100, (((data.risk.risk_family_scores['STRUCTURAL_INTERMEDIARY'] ?? 0) / 25) * 100))}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Volume */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between items-center text-[11px]">
+                                <span className="text-slate-700">Volume Scale</span>
+                                <span className="font-semibold text-violet-700 tabular-nums">
+                                  {data.risk.risk_family_scores['STRUCTURAL_VOLUME'] ?? 0} <span className="text-slate-400 font-normal">/ 20</span>
+                                </span>
+                              </div>
+                              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className="bg-violet-600 h-full rounded-full"
+                                  style={{ width: `${Math.min(100, (((data.risk.risk_family_scores['STRUCTURAL_VOLUME'] ?? 0) / 20) * 100))}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Role Evidence */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between items-center text-[11px]">
+                                <span className="text-slate-700">Role Classification Evidence</span>
+                                <span className="font-semibold text-violet-700 tabular-nums">
+                                  {data.risk.risk_family_scores['STRUCTURAL_ROLE'] ?? 0} <span className="text-slate-400 font-normal">/ 20</span>
+                                </span>
+                              </div>
+                              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className="bg-violet-600 h-full rounded-full"
+                                  style={{ width: `${Math.min(100, (((data.risk.risk_family_scores['STRUCTURAL_ROLE'] ?? 0) / 20) * 100))}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Behavioral Risk Panel */}
+                        <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-3 font-mono">
+                          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <div>
+                              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block">AXIS 1</span>
+                              <h4 className="text-sm font-bold text-slate-900">BEHAVIORAL RISK</h4>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-lg font-bold text-slate-900">{data.risk.behavioral_risk_index?.toFixed(1) ?? 0}</span>
+                              <span className="text-xs text-slate-400"> / 100</span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2.5 text-xs">
+                            {/* Velocity */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between items-center text-[11px]">
+                                <span className="text-slate-700">Velocity (3–15 min Pass-Through)</span>
+                                <span className="font-semibold text-violet-700 tabular-nums">
+                                  {data.risk.risk_family_scores['BEHAVIORAL_VELOCITY'] ?? 0} <span className="text-slate-400 font-normal">/ 40</span>
+                                </span>
+                              </div>
+                              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className="bg-violet-600 h-full rounded-full"
+                                  style={{ width: `${Math.min(100, (((data.risk.risk_family_scores['BEHAVIORAL_VELOCITY'] ?? 0) / 40) * 100))}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Automation */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between items-center text-[11px]">
+                                <span className="text-slate-700">Automation (Emulator / Script / IP)</span>
+                                <span className="font-semibold text-violet-700 tabular-nums">
+                                  {data.risk.risk_family_scores['BEHAVIORAL_AUTOMATION'] ?? 0} <span className="text-slate-400 font-normal">/ 30</span>
+                                </span>
+                              </div>
+                              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className="bg-violet-600 h-full rounded-full"
+                                  style={{ width: `${Math.min(100, (((data.risk.risk_family_scores['BEHAVIORAL_AUTOMATION'] ?? 0) / 30) * 100))}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Flow Parity */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between items-center text-[11px]">
+                                <span className="text-slate-700">Flow Parity (Inflow / Outflow)</span>
+                                <span className="font-semibold text-violet-700 tabular-nums">
+                                  {data.risk.risk_family_scores['BEHAVIORAL_FLOW_PARITY'] ?? 0} <span className="text-slate-400 font-normal">/ 20</span>
+                                </span>
+                              </div>
+                              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className="bg-violet-600 h-full rounded-full"
+                                  style={{ width: `${Math.min(100, (((data.risk.risk_family_scores['BEHAVIORAL_FLOW_PARITY'] ?? 0) / 20) * 100))}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Burst / Temporal */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between items-center text-[11px]">
+                                <span className="text-slate-700">Burst & Temporal Anomaly</span>
+                                <span className="font-semibold text-violet-700 tabular-nums">
+                                  {data.risk.risk_family_scores['BEHAVIORAL_BURST_TEMPORAL'] ?? 0} <span className="text-slate-400 font-normal">/ 10</span>
+                                </span>
+                              </div>
+                              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className="bg-violet-600 h-full rounded-full"
+                                  style={{ width: `${Math.min(100, (((data.risk.risk_family_scores['BEHAVIORAL_BURST_TEMPORAL'] ?? 0) / 10) * 100))}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
