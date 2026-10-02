@@ -15,11 +15,31 @@ import {
   ShieldAlert,
   Zap,
   Clock,
-  Info
+  Info,
+  GitFork,
+  Layers,
+  CheckCircle2,
+  AlertTriangle
 } from 'lucide-react';
-import { getAccountDetail, getAccountFeatures, getAccountVelocity } from '../api/accounts';
+import { 
+  getAccountDetail, 
+  getAccountFeatures, 
+  getAccountVelocity, 
+  getAccountRisk,
+  getAccountAttribution,
+  getAccountAttributionTrace
+} from '../api/accounts';
 import { getAccountTransactions } from '../api/transactions';
-import type { AccountDetail, PaginatedTransactions, TransactionItem, AccountFeatures, VelocityResponse } from '../types';
+import type { 
+  AccountDetail, 
+  PaginatedTransactions, 
+  TransactionItem, 
+  AccountFeatures, 
+  VelocityResponse, 
+  MuleRiskScore,
+  AccountAttributionResponse,
+  AttributionTraceResponse
+} from '../types';
 
 export const AccountView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,9 +49,17 @@ export const AccountView: React.FC = () => {
   const [loadingDetail, setLoadingDetail] = useState(true);
   const [detailError, setDetailError] = useState<string | null>(null);
 
-  // Forensic Features & Velocity state (Step 4 & Step 5A)
+  // Forensic Features, Velocity & Risk Score state (Step 4, Step 5A, Step 5B)
   const [features, setFeatures] = useState<AccountFeatures | null>(null);
   const [velocity, setVelocity] = useState<VelocityResponse | null>(null);
+  const [risk, setRisk] = useState<MuleRiskScore | null>(null);
+
+  // Step 5C: Temporal FIFO Attribution & 4-Hop Trace State
+  const [attribution, setAttribution] = useState<AccountAttributionResponse | null>(null);
+  const [attributionTrace, setAttributionTrace] = useState<AttributionTraceResponse | null>(null);
+  const [loadingAttribution, setLoadingAttribution] = useState<boolean>(true);
+  const [attributionTab, setAttributionTab] = useState<'matches' | 'trace' | 'unallocated'>('matches');
+  const [horizonFilter, setHorizonFilter] = useState<number | null>(null);
 
   // Transactions pagination state
   const [direction, setDirection] = useState<'all' | 'in' | 'out'>('all');
@@ -56,7 +84,7 @@ export const AccountView: React.FC = () => {
         setLoadingDetail(false);
       });
 
-    // Fetch forensic features and velocity in parallel
+    // Fetch forensic features, velocity, and mule risk score in parallel
     getAccountFeatures(id)
       .then((feat) => setFeatures(feat))
       .catch(() => setFeatures(null));
@@ -64,7 +92,31 @@ export const AccountView: React.FC = () => {
     getAccountVelocity(id)
       .then((vel) => setVelocity(vel))
       .catch(() => setVelocity(null));
+
+    getAccountRisk(id)
+      .then((r) => setRisk(r))
+      .catch(() => setRisk(null));
   }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    setLoadingAttribution(true);
+
+    Promise.all([
+      getAccountAttribution(id, horizonFilter ?? undefined),
+      getAccountAttributionTrace(id, 4, horizonFilter ?? undefined)
+    ])
+      .then(([attrData, traceData]) => {
+        setAttribution(attrData);
+        setAttributionTrace(traceData);
+        setLoadingAttribution(false);
+      })
+      .catch(() => {
+        setAttribution(null);
+        setAttributionTrace(null);
+        setLoadingAttribution(false);
+      });
+  }, [id, horizonFilter]);
 
   useEffect(() => {
     if (!id) return;
@@ -250,6 +302,225 @@ export const AccountView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Step 5B Explainable 0-100 Mule Risk Index */}
+      {risk && (
+        <div className="bg-[#0b0f19] border border-slate-800 rounded-xl p-5 space-y-5 shadow-xl font-mono">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-800/80 pb-3">
+            <div className="flex items-center space-x-2">
+              <ShieldAlert className="w-5 h-5 text-cyan-400" />
+              <div className="flex items-center space-x-2.5">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200">
+                  Mule Risk Index
+                </h2>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${
+                  risk.risk_band === 'VERY_HIGH'
+                    ? 'bg-rose-950/40 border-rose-600/60 text-rose-400'
+                    : risk.risk_band === 'HIGH'
+                    ? 'bg-amber-950/40 border-amber-600/60 text-amber-400'
+                    : risk.risk_band === 'MODERATE'
+                    ? 'bg-cyan-950/40 border-cyan-600/60 text-cyan-400'
+                    : 'bg-emerald-950/40 border-emerald-600/60 text-emerald-400'
+                }`}>
+                  {risk.risk_band === 'VERY_HIGH' ? 'VERY HIGH RISK INDEX'
+                    : risk.risk_band === 'HIGH' ? 'HIGH RISK INDEX'
+                    : risk.risk_band === 'MODERATE' ? 'MODERATE RISK INDEX'
+                    : 'LOW RISK INDEX'}
+                </span>
+              </div>
+            </div>
+            <span className="text-[10px] text-amber-400 bg-amber-950/40 border border-amber-800/40 px-2 py-0.5 rounded">
+              INVESTIGATIVE CANDIDATE INDICATORS ONLY &bull; NOT LEGAL DETERMINATION
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* Score & Tier Box (4 cols) */}
+            <div className="lg:col-span-4 bg-slate-900/40 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between space-y-4">
+              <div>
+                <span className="text-xs text-slate-400 uppercase tracking-wider block">Bounded Investigative Index</span>
+                <div className="mt-2 flex items-baseline space-x-2">
+                  <span className={`text-4xl font-extrabold ${
+                    risk.risk_band === 'VERY_HIGH' ? 'text-rose-400'
+                    : risk.risk_band === 'HIGH' ? 'text-amber-400'
+                    : risk.risk_band === 'MODERATE' ? 'text-cyan-400'
+                    : 'text-emerald-400'
+                  }`}>
+                    {risk.risk_index}
+                  </span>
+                  <span className="text-lg text-slate-500 font-bold">/ 100</span>
+                </div>
+
+                {/* Meter bar */}
+                <div className="w-full bg-slate-800 rounded-full h-2 mt-3 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      risk.risk_band === 'VERY_HIGH' ? 'bg-rose-500'
+                      : risk.risk_band === 'HIGH' ? 'bg-amber-500'
+                      : risk.risk_band === 'MODERATE' ? 'bg-cyan-500'
+                      : 'bg-emerald-500'
+                    }`}
+                    style={{ width: `${Math.min(Math.max(risk.risk_index, 3), 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="text-[11px] text-slate-400 space-y-1.5 pt-2 border-t border-slate-800/80">
+                <div className="flex justify-between text-[10px] text-slate-500">
+                  <span>Model: <strong className="text-slate-300">{risk.risk_model_version}</strong></span>
+                  <span>Provenance: <strong className="text-slate-300">{risk.risk_provenance}</strong></span>
+                </div>
+                <p className="text-[10px] text-slate-500 leading-normal italic">
+                  Deterministic bounded aggregation across 6 independent evidence families with strict non-duplicative ceilings.
+                </p>
+              </div>
+            </div>
+
+            {/* Family Contribution Breakdown (8 cols) */}
+            <div className="lg:col-span-8 bg-slate-900/40 border border-slate-800/80 rounded-xl p-4 space-y-3">
+              <span className="text-xs text-slate-400 uppercase tracking-wider block">
+                Family Contribution Breakdown
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {/* Velocity */}
+                <div className="bg-[#0b0f19] border border-slate-800 p-2.5 rounded-lg space-y-1">
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-300">Velocity (3–15 min)</span>
+                    <span className="font-bold text-cyan-400">
+                      {risk.risk_family_scores['VELOCITY'] ?? 0} <span className="text-slate-500 font-normal">/ 25</span>
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-cyan-500 h-full rounded-full"
+                      style={{ width: `${((risk.risk_family_scores['VELOCITY'] ?? 0) / 25) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Automation */}
+                <div className="bg-[#0b0f19] border border-slate-800 p-2.5 rounded-lg space-y-1">
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-300">Automation / Device / IP</span>
+                    <span className="font-bold text-cyan-400">
+                      {risk.risk_family_scores['AUTOMATION'] ?? 0} <span className="text-slate-500 font-normal">/ 20</span>
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-cyan-500 h-full rounded-full"
+                      style={{ width: `${((risk.risk_family_scores['AUTOMATION'] ?? 0) / 20) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Flow Structure */}
+                <div className="bg-[#0b0f19] border border-slate-800 p-2.5 rounded-lg space-y-1">
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-300">Flow Structure & Scale</span>
+                    <span className="font-bold text-cyan-400">
+                      {risk.risk_family_scores['FLOW_STRUCTURE'] ?? 0} <span className="text-slate-500 font-normal">/ 20</span>
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-cyan-500 h-full rounded-full"
+                      style={{ width: `${((risk.risk_family_scores['FLOW_STRUCTURE'] ?? 0) / 20) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Network Structure */}
+                <div className="bg-[#0b0f19] border border-slate-800 p-2.5 rounded-lg space-y-1">
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-300">Counterparty & Network</span>
+                    <span className="font-bold text-cyan-400">
+                      {risk.risk_family_scores['NETWORK_STRUCTURE'] ?? 0} <span className="text-slate-500 font-normal">/ 15</span>
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-cyan-500 h-full rounded-full"
+                      style={{ width: `${((risk.risk_family_scores['NETWORK_STRUCTURE'] ?? 0) / 15) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Transaction Behavior */}
+                <div className="bg-[#0b0f19] border border-slate-800 p-2.5 rounded-lg space-y-1">
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-300">Transaction Behavior</span>
+                    <span className="font-bold text-cyan-400">
+                      {risk.risk_family_scores['TRANSACTION_BEHAVIOR'] ?? 0} <span className="text-slate-500 font-normal">/ 10</span>
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-cyan-500 h-full rounded-full"
+                      style={{ width: `${((risk.risk_family_scores['TRANSACTION_BEHAVIOR'] ?? 0) / 10) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Role Support */}
+                <div className="bg-[#0b0f19] border border-slate-800 p-2.5 rounded-lg space-y-1">
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-300">Role Classification Support</span>
+                    <span className="font-bold text-cyan-400">
+                      {risk.risk_family_scores['ROLE_SUPPORT'] ?? 0} <span className="text-slate-500 font-normal">/ 10</span>
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-cyan-500 h-full rounded-full"
+                      style={{ width: `${((risk.risk_family_scores['ROLE_SUPPORT'] ?? 0) / 10) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Why this score? Evidence reasons section */}
+          {risk.risk_reasons && risk.risk_reasons.length > 0 && (
+            <div className="bg-slate-900/30 border border-slate-800/80 rounded-xl p-4 space-y-2.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-300 font-bold uppercase tracking-wider flex items-center space-x-1.5">
+                  <Info className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Why this score? (Factual Evidence Reasons)</span>
+                </span>
+                <span className="text-[10px] text-slate-500">
+                  {risk.risk_reasons.length} active evidence items
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
+                {risk.risk_reasons.slice(0, 6).map((reason, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-[#0b0f19] border border-slate-800/90 rounded-lg p-2.5 space-y-1"
+                  >
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="font-bold text-cyan-300 tracking-wide">{reason.code}</span>
+                      <span className="text-amber-400 font-bold bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.5 rounded">
+                        +{reason.points} pts
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 leading-snug">
+                      {reason.description}
+                    </p>
+                    <div className="text-[9px] text-slate-500 flex justify-between pt-0.5">
+                      <span>Family: {reason.family}</span>
+                      <span>Observed: {reason.observed_value}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Forensic Intelligence & Candidate Classification (Step 4 & Step 5A) */}
       <div className="bg-[#0b0f19] border border-slate-800 rounded-xl p-5 space-y-5 shadow-xl">
@@ -520,6 +791,362 @@ export const AccountView: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Step 5C: Temporal FIFO Attribution & 4-Hop Provenance Traversal */}
+        <div className="border border-slate-800/90 rounded-xl p-4 bg-slate-900/40 font-mono space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center space-x-2">
+              <GitFork className="w-4 h-4 text-cyan-400" />
+              <span className="text-xs font-bold uppercase text-slate-200">
+                Step 5C: Temporal FIFO Attribution & 4-Hop Provenance Trace
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-cyan-950/60 border border-cyan-800/50 text-cyan-300">
+                POLICY: {attribution?.policy_name ?? 'TEMPORAL_FIFO'}_{attribution?.policy_version ?? 'v1'}
+              </span>
+            </div>
+
+            {/* Horizon Filter Selection */}
+            <div className="flex items-center space-x-1.5 text-[11px]">
+              <span className="text-slate-400 text-[10px] flex items-center space-x-1">
+                <Clock className="w-3 h-3 text-slate-500" />
+                <span>Horizon:</span>
+              </span>
+              {[
+                { label: 'All Time', val: null },
+                { label: '1h', val: 3600 },
+                { label: '6h', val: 21600 },
+                { label: '24h', val: 86400 },
+                { label: '7d', val: 604800 },
+              ].map((opt) => (
+                <button
+                  key={opt.label}
+                  onClick={() => setHorizonFilter(opt.val)}
+                  className={`px-2 py-0.5 rounded text-[10px] transition ${
+                    horizonFilter === opt.val
+                      ? 'bg-cyan-500 text-slate-950 font-bold'
+                      : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Metric KPI Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div className="bg-[#0b0f19] p-3 rounded-lg border border-slate-800">
+              <span className="text-[10px] text-slate-500 block uppercase">Total Attributed Volume</span>
+              <span className="text-base font-bold text-emerald-400">
+                ₹{(attribution?.total_attributed_volume ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <span className="text-[10px] text-slate-500 block mt-0.5">FIFO chronologically funded</span>
+            </div>
+
+            <div className="bg-[#0b0f19] p-3 rounded-lg border border-slate-800">
+              <span className="text-[10px] text-slate-500 block uppercase">Unallocated Outflow</span>
+              <span className={`text-base font-bold ${
+                (attribution?.total_unallocated_outflow ?? 0) > 0 ? 'text-amber-400' : 'text-slate-400'
+              }`}>
+                ₹{(attribution?.total_unallocated_outflow ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <span className="text-[10px] text-slate-500 block mt-0.5">Unfunded outbound remainder</span>
+            </div>
+
+            <div className="bg-[#0b0f19] p-3 rounded-lg border border-slate-800">
+              <span className="text-[10px] text-slate-500 block uppercase">Attribution Edges</span>
+              <span className="text-base font-bold text-cyan-400">
+                {attribution?.attribution_edge_count ?? 0}
+              </span>
+              <span className="text-[10px] text-slate-500 block mt-0.5">Inflow → Outflow links</span>
+            </div>
+
+            <div className="bg-[#0b0f19] p-3 rounded-lg border border-slate-800">
+              <span className="text-[10px] text-slate-500 block uppercase">4-Hop Trace Reach</span>
+              <span className="text-base font-bold text-purple-400">
+                {attributionTrace?.total_hops_found ?? 0} hops / {attributionTrace?.edges.length ?? 0} edges
+              </span>
+              <span className="text-[10px] text-slate-500 block mt-0.5">
+                {attributionTrace?.truncated ? '⚠️ Branch Capped' : 'Complete Provenance'}
+              </span>
+            </div>
+          </div>
+
+          {/* Sub-tab Navigation */}
+          <div className="flex border-b border-slate-800 text-xs">
+            <button
+              onClick={() => setAttributionTab('matches')}
+              className={`py-2 px-3 border-b-2 font-semibold transition flex items-center space-x-1.5 ${
+                attributionTab === 'matches'
+                  ? 'border-cyan-400 text-cyan-400 bg-cyan-950/20'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <GitFork className="w-3.5 h-3.5" />
+              <span>FIFO Attribution Links ({attribution?.attribution_records.length ?? 0})</span>
+            </button>
+
+            <button
+              onClick={() => setAttributionTab('trace')}
+              className={`py-2 px-3 border-b-2 font-semibold transition flex items-center space-x-1.5 ${
+                attributionTab === 'trace'
+                  ? 'border-purple-400 text-purple-400 bg-purple-950/20'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>4-Hop Temporal Trace ({attributionTrace?.edges.length ?? 0})</span>
+            </button>
+
+            <button
+              onClick={() => setAttributionTab('unallocated')}
+              className={`py-2 px-3 border-b-2 font-semibold transition flex items-center space-x-1.5 ${
+                attributionTab === 'unallocated'
+                  ? 'border-amber-400 text-amber-400 bg-amber-950/20'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              <span>Unallocated Outflows ({attribution?.unallocated_records.length ?? 0})</span>
+            </button>
+          </div>
+
+          {/* Tab 1: FIFO Attribution Links */}
+          {attributionTab === 'matches' && (
+            <div>
+              {loadingAttribution ? (
+                <div className="py-8 text-center text-slate-500 flex items-center justify-center space-x-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+                  <span>Computing chronological FIFO fund attributions...</span>
+                </div>
+              ) : !attribution || attribution.attribution_records.length === 0 ? (
+                <div className="py-6 text-center text-slate-500 text-xs">
+                  No chronological attribution matches found under current horizon.
+                </div>
+              ) : (
+                <div className="max-h-60 overflow-y-auto border border-slate-800 rounded-lg">
+                  <table className="w-full text-left text-[11px] font-mono">
+                    <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 sticky top-0">
+                      <tr>
+                        <th className="py-2 px-3">Inbound Source</th>
+                        <th className="py-2 px-3">Outbound Dest</th>
+                        <th className="py-2 px-3">Inflow Time</th>
+                        <th className="py-2 px-3">Outflow Time</th>
+                        <th className="py-2 px-3">Delay Delta</th>
+                        <th className="py-2 px-3">Attributed Flow</th>
+                        <th className="py-2 px-3">Hop</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50 bg-[#070b12] text-slate-300">
+                      {attribution.attribution_records.map((r, idx) => (
+                        <tr key={idx} className="hover:bg-slate-800/30">
+                          <td className="py-2 px-3">
+                            <span className="text-cyan-400 font-semibold block">{r.source_transaction_id}</span>
+                            <span className="text-[10px] text-slate-500">From: {r.source_account}</span>
+                          </td>
+                          <td className="py-2 px-3">
+                            <span className="text-purple-400 font-semibold block">{r.destination_transaction_id}</span>
+                            <span className="text-[10px] text-slate-500">To: {r.destination_account}</span>
+                          </td>
+                          <td className="py-2 px-3 text-slate-400">{r.source_timestamp.replace('T', ' ')}</td>
+                          <td className="py-2 px-3 text-slate-400">{r.destination_timestamp.replace('T', ' ')}</td>
+                          <td className="py-2 px-3 text-amber-300 font-semibold">
+                            {r.delay_seconds >= 60 ? `${Math.floor(r.delay_seconds / 60)}m ${Math.round(r.delay_seconds % 60)}s` : `${Math.round(r.delay_seconds)}s`}
+                          </td>
+                          <td className="py-2 px-3 text-emerald-400 font-semibold">
+                            ₹{r.attributed_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-2 px-3">
+                            <span className="bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-300">
+                              H{r.hop_number}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tab 2: 4-Hop Temporal Trace */}
+          {attributionTab === 'trace' && (
+            <div className="space-y-3">
+              {loadingAttribution ? (
+                <div className="py-8 text-center text-slate-500 flex items-center justify-center space-x-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                  <span>Traversing 4-hop temporal money-flow graph...</span>
+                </div>
+              ) : !attributionTrace || attributionTrace.edges.length === 0 ? (
+                <div className="py-6 text-center text-slate-500 text-xs">
+                  No downstream temporal money flow observed from this account.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* Truncation and Cycle Warnings */}
+                  {attributionTrace.truncated && (
+                    <div className="p-2.5 rounded-lg bg-amber-950/40 border border-amber-700/60 text-amber-300 text-xs flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span><strong>Traversal Truncated:</strong> {attributionTrace.truncation_reason} (branch limits applied)</span>
+                      </div>
+                      <span className="text-[10px] text-amber-400 uppercase font-bold bg-amber-900/40 px-2 py-0.5 rounded">Capped</span>
+                    </div>
+                  )}
+
+                  {attributionTrace.cycles_detected && attributionTrace.cycles_detected.length > 0 && (
+                    <div className="p-2.5 rounded-lg bg-indigo-950/40 border border-indigo-700/60 text-indigo-300 text-xs space-y-1">
+                      <div className="flex items-center space-x-2 font-bold text-indigo-200">
+                        <span>🔄 Account Flow Cycles Detected ({attributionTrace.cycles_detected.length}):</span>
+                      </div>
+                      <div className="text-[10px] text-indigo-300/90 font-mono space-y-0.5">
+                        {attributionTrace.cycles_detected.map((c, i) => (
+                          <div key={i}>&bull; {c} (branch traversal stopped to prevent infinite circular re-attribution)</div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Hop Level Breakdown Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                    {[1, 2, 3, 4].map((hopNum) => {
+                      const hopEdges = attributionTrace.edges.filter((e) => e.hop_number === hopNum);
+                      const hopTotal = hopEdges.reduce((sum, e) => sum + e.attributed_amount, 0);
+                      return (
+                        <div
+                          key={hopNum}
+                          className={`p-2.5 rounded-lg border text-xs font-mono ${
+                            hopEdges.length > 0
+                              ? 'bg-[#0b0f19] border-purple-800/50 text-slate-300'
+                              : 'bg-slate-950/50 border-slate-900 text-slate-600'
+                          }`}
+                        >
+                          <div className="flex justify-between items-center text-[10px] font-bold">
+                            <span className={hopEdges.length > 0 ? 'text-purple-400' : 'text-slate-600'}>
+                              HOP {hopNum}
+                            </span>
+                            <span>{hopEdges.length} edges</span>
+                          </div>
+                          <div className="text-sm font-bold text-slate-100 mt-1">
+                            ₹{hopTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Trace Edges List */}
+                  <div className="max-h-60 overflow-y-auto border border-slate-800 rounded-lg">
+                    <table className="w-full text-left text-[11px] font-mono">
+                      <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 sticky top-0">
+                        <tr>
+                          <th className="py-2 px-3">Hop / Type</th>
+                          <th className="py-2 px-3">Intermediary Sender</th>
+                          <th className="py-2 px-3">Next Downstream Account</th>
+                          <th className="py-2 px-3">Destination Tx</th>
+                          <th className="py-2 px-3">Timestamp</th>
+                          <th className="py-2 px-3">Attributed Flow</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/50 bg-[#070b12] text-slate-300">
+                        {attributionTrace.edges.map((e, idx) => (
+                          <tr key={idx} className="hover:bg-slate-800/30">
+                            <td className="py-2 px-3">
+                              <div className="flex items-center space-x-1.5">
+                                <span className="bg-purple-950/60 border border-purple-800/60 px-1.5 py-0.5 rounded text-[10px] text-purple-300 font-bold">
+                                  H{e.hop_number}
+                                </span>
+                                <span className={`text-[9px] px-1 py-0.5 rounded font-bold uppercase ${
+                                  e.edge_type === 'ROOT_SEED'
+                                    ? 'bg-amber-950/60 text-amber-300 border border-amber-800/50'
+                                    : 'bg-cyan-950/60 text-cyan-300 border border-cyan-800/50'
+                                }`}>
+                                  {e.edge_type === 'ROOT_SEED' ? 'SEED' : 'FIFO'}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-2 px-3 text-cyan-400 font-semibold">{e.intermediary_account}</td>
+                            <td className="py-2 px-3 text-purple-400 font-semibold">{e.destination_account}</td>
+                            <td className="py-2 px-3 text-slate-400">{e.destination_transaction_id}</td>
+                            <td className="py-2 px-3 text-slate-400">{e.destination_timestamp.replace('T', ' ')}</td>
+                            <td className="py-2 px-3 text-emerald-400 font-semibold">
+                              ₹{e.attributed_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tab 3: Unallocated Outflows */}
+          {attributionTab === 'unallocated' && (
+            <div>
+              {!attribution || attribution.unallocated_records.length === 0 ? (
+                <div className="py-6 text-center text-emerald-400/80 text-xs flex items-center justify-center space-x-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>All outgoing fund transfers were fully attributed to prior inflows. Zero unallocated outflow.</span>
+                </div>
+              ) : (
+                <div className="max-h-60 overflow-y-auto border border-slate-800 rounded-lg">
+                  <table className="w-full text-left text-[11px] font-mono">
+                    <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 sticky top-0">
+                      <tr>
+                        <th className="py-2 px-3">Outflow Tx ID</th>
+                        <th className="py-2 px-3">Receiver Account</th>
+                        <th className="py-2 px-3">Timestamp</th>
+                        <th className="py-2 px-3">Outflow Amount</th>
+                        <th className="py-2 px-3">Attributed</th>
+                        <th className="py-2 px-3">Unallocated Remainder</th>
+                        <th className="py-2 px-3">Reason Code</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50 bg-[#070b12] text-slate-300">
+                      {attribution.unallocated_records.map((u, idx) => (
+                        <tr key={idx} className="hover:bg-slate-800/30">
+                          <td className="py-2 px-3 text-purple-400 font-semibold">{u.destination_transaction_id}</td>
+                          <td className="py-2 px-3 text-slate-300">{u.destination_account}</td>
+                          <td className="py-2 px-3 text-slate-400">{u.destination_timestamp.replace('T', ' ')}</td>
+                          <td className="py-2 px-3 text-slate-200">
+                            ₹{u.destination_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-2 px-3 text-emerald-400">
+                            ₹{u.attributed_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-2 px-3 text-amber-400 font-semibold">
+                            ₹{u.unallocated_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-2 px-3">
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                              u.reason === 'NO_PRIOR_INFLOW'
+                                ? 'bg-slate-800 text-slate-400 border border-slate-700'
+                                : u.reason === 'HORIZON_EXCEEDED'
+                                ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
+                                : 'bg-rose-950/60 text-rose-300 border border-rose-800/60'
+                            }`}>
+                              {u.reason}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Legal / Evidence Disclaimer */}
+          <div className="text-[10px] text-slate-500 pt-2 border-t border-slate-800/70 leading-relaxed">
+            * INVESTIGATIVE ATTRIBUTION ONLY -- Deterministic accounting model based on chronological FIFO rules.
+            Does not constitute legal proof of beneficial ownership or judicial determination of criminality.
+            Unallocated amounts explicitly indicate funding from outside the observed window or account opening balance.
+          </div>
         </div>
       </div>
 

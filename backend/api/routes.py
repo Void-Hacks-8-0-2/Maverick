@@ -11,6 +11,35 @@ from backend.db.connection import get_db
 from backend.services.graph_service import get_account_graph, get_account_trace
 from backend.features import AccountFeatures, get_account_features
 from backend.detection.velocity_detector import get_velocity_events
+from backend.detection.risk_scoring import get_account_risk
+from backend.detection.risk_models import MuleRiskScore
+from backend.attribution import (
+    AccountAttributionResponse,
+    AttributionTraceResponse,
+    TransactionAttributionResponse,
+    compute_account_fifo_attribution,
+    trace_fifo_attribution_4hop,
+    get_transaction_fifo_attribution,
+)
+from backend.investigations import (
+    VictimInvestigationResponse,
+    investigate_victim_account,
+)
+from fastapi import Response
+from backend.case_files import (
+    CaseFileRequest,
+    CaseFileResponse,
+    generate_forensic_case_file,
+    CASE_FILE_STORE,
+)
+from backend.case_diary import (
+    CaseDiaryRequest,
+    CaseDiaryResponse,
+    build_case_diary,
+    CASE_DIARY_STORE,
+)
+from backend.case_diary.models import GenerateNarrativeRequest
+from backend.case_diary.service import regenerate_narrative
 
 router = APIRouter()
 
@@ -395,3 +424,293 @@ def get_account_velocity_events(
         "provenance": "DERIVED",
         "events": events,
     }
+
+
+@router.get("/accounts/{account_id}/risk", response_model=MuleRiskScore)
+def get_account_risk_score(account_id: str):
+    """
+    Step 5B: Returns explainable 0-100 Mule Risk Index for one account.
+
+    Aggregates 6 independent evidence families into a bounded, reproducible score:
+      - FLOW_STRUCTURE (max 20)
+      - VELOCITY (max 25)
+      - AUTOMATION (max 20)
+      - NETWORK_STRUCTURE (max 15)
+      - TRANSACTION_BEHAVIOR (max 10)
+      - ROLE_SUPPORT (max 10)
+
+    INVESTIGATIVE CANDIDATE INDICATORS ONLY -- not a declaration of criminality or legal determination.
+    """
+    con = get_db()
+    acc = account_id.strip()
+
+    # Verify account exists
+    exists = con.execute(
+        "SELECT COUNT(*) FROM accounts_dimension WHERE account_number = ?", [acc]
+    ).fetchone()[0]
+    if not exists:
+        raise HTTPException(status_code=404, detail=f"Account '{account_id}' not found in dataset")
+
+    risk_score = get_account_risk(con, acc)
+    if not risk_score:
+        raise HTTPException(status_code=404, detail=f"Risk score not found for account '{account_id}'")
+
+    return risk_score
+
+
+@router.get("/accounts/{account_id}/attribution", response_model=AccountAttributionResponse)
+def get_account_attribution(
+    account_id: str,
+    horizon_seconds: Optional[int] = Query(None, ge=1, description="Maximum elapsed seconds between inflow and outflow")
+):
+    """
+    Step 5C: Returns exact chronological FIFO attribution for one account.
+    Tracks which earlier incoming transactions funded each outgoing transaction.
+    """
+    con = get_db()
+    acc = account_id.strip()
+
+    exists = con.execute(
+        "SELECT COUNT(*) FROM accounts_dimension WHERE account_number = ?", [acc]
+    ).fetchone()[0]
+    if not exists:
+        raise HTTPException(status_code=404, detail=f"Account '{account_id}' not found in dataset")
+
+    return compute_account_fifo_attribution(con, acc, horizon_seconds=horizon_seconds)
+
+
+@router.get("/accounts/{account_id}/attribution/trace", response_model=AttributionTraceResponse)
+def get_account_attribution_trace(
+    account_id: str,
+    root_row_id: Optional[int] = Query(None, description="Optional root transaction rowid to trace specific transfer"),
+    max_hops: int = Query(4, ge=1, le=6, description="Maximum downstream hops (default 4)"),
+    horizon_seconds: Optional[int] = Query(None, ge=1, description="Attribution horizon per hop in seconds")
+):
+    """
+    Step 5C: Traces up to 4 hops of temporal money-flow attribution starting from a victim or origin account.
+    Distinguishes temporal money-flow attribution from mere structural connectivity.
+    """
+    con = get_db()
+    acc = account_id.strip()
+
+    exists = con.execute(
+        "SELECT COUNT(*) FROM accounts_dimension WHERE account_number = ?", [acc]
+    ).fetchone()[0]
+    if not exists:
+        raise HTTPException(status_code=404, detail=f"Account '{account_id}' not found in dataset")
+
+    return trace_fifo_attribution_4hop(
+        con, acc, root_row_id=root_row_id, max_hops=max_hops, horizon_seconds=horizon_seconds
+    )
+
+
+@router.get("/transactions/{transaction_id}/attribution", response_model=TransactionAttributionResponse)
+def get_transaction_attribution(
+    transaction_id: str,
+    row_id: Optional[int] = Query(None, description="Stable rowid to disambiguate duplicate Transaction_IDs")
+):
+    """
+    Step 5C: Returns FIFO attribution details for a specific transaction row.
+    Disambiguates duplicate Transaction_IDs using row_id.
+    """
+    con = get_db()
+    tx_id = transaction_id.strip()
+
+    try:
+        return get_transaction_fifo_attribution(con, tx_id, row_id=row_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/investigations/victim/{account_id}", response_model=VictimInvestigationResponse)
+def get_victim_investigation(
+    account_id: str,
+    max_hops: int = Query(4, ge=1, le=6, description="Maximum downstream attribution hops"),
+    horizon_seconds: Optional[int] = Query(None, ge=1, description="Attribution horizon per hop in seconds"),
+    max_branches_per_hop: int = Query(50, ge=1, le=200, description="Maximum branching fanout per hop")
+):
+    """
+    Step 6: Blind Victim Investigation Endpoint for Operation 'ABHEDYA-CHAKRA'.
+    Orchestrates account validation, transaction correlation, L1/L2/L3 role classification,
+    Step 5B Mule Risk Index, Step 5A velocity evidence, Step 5C temporal FIFO 4-hop money trace,
+    and terminal recipient identification.
+    """
+    con = get_db()
+    try:
+        return investigate_victim_account(
+            con,
+            account_id,
+            max_hops=max_hops,
+            horizon_seconds=horizon_seconds,
+            max_branches_per_hop=max_branches_per_hop
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/case-files", response_model=CaseFileResponse)
+def create_case_file(req: CaseFileRequest):
+    """
+    Step 7: Compiles a reproducible, evidence-grounded forensic case file and compiled package.
+    """
+    con = get_db()
+    try:
+        return generate_forensic_case_file(con, req)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Case file generation error: {str(e)}")
+
+
+@router.get("/case-files/{case_file_id}", response_model=CaseFileResponse)
+def get_case_file_metadata(case_file_id: str):
+    """
+    Step 7: Retrieves metadata for a previously generated forensic case file.
+    """
+    cf_id = case_file_id.strip()
+    resp = CASE_FILE_STORE.get_response(cf_id)
+    if resp:
+        return resp
+    # If not in store, attempt to reconstruct if valid format: CASE-{account}-{hash}
+    parts = cf_id.split("-")
+    if len(parts) >= 3 and parts[0] == "CASE":
+        acc = parts[1]
+        con = get_db()
+        try:
+            return generate_forensic_case_file(con, CaseFileRequest(account_number=acc))
+        except Exception:
+            pass
+    raise HTTPException(status_code=404, detail=f"Case file '{cf_id}' not found")
+
+
+@router.get("/case-files/{case_file_id}/pdf")
+def download_case_file_pdf(case_file_id: str):
+    """
+    Step 7: Downloads the compiled forensic PDF case report.
+    """
+    cf_id = case_file_id.strip()
+    pdf_bytes = CASE_FILE_STORE.get_pdf(cf_id)
+    if not pdf_bytes:
+        # Reconstruct on demand
+        parts = cf_id.split("-")
+        if len(parts) >= 3 and parts[0] == "CASE":
+            acc = parts[1]
+            con = get_db()
+            try:
+                generate_forensic_case_file(con, CaseFileRequest(account_number=acc, include_pdf=True))
+                pdf_bytes = CASE_FILE_STORE.get_pdf(cf_id)
+            except Exception:
+                pass
+    if not pdf_bytes:
+        raise HTTPException(status_code=404, detail=f"PDF for case file '{cf_id}' not found")
+
+    safe_filename = f"abhedya_case_{cf_id}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{safe_filename}"'}
+    )
+
+
+@router.get("/case-files/{case_file_id}/json")
+def download_case_file_json(case_file_id: str):
+    """
+    Step 7: Downloads the complete JSON evidence package.
+    """
+    cf_id = case_file_id.strip()
+    json_bytes = CASE_FILE_STORE.get_json(cf_id)
+    if not json_bytes:
+        # Reconstruct on demand
+        parts = cf_id.split("-")
+        if len(parts) >= 3 and parts[0] == "CASE":
+            acc = parts[1]
+            con = get_db()
+            try:
+                generate_forensic_case_file(con, CaseFileRequest(account_number=acc, include_json=True))
+                json_bytes = CASE_FILE_STORE.get_json(cf_id)
+            except Exception:
+                pass
+    if not json_bytes:
+        raise HTTPException(status_code=404, detail=f"Evidence JSON for case file '{cf_id}' not found")
+
+    safe_filename = f"abhedya_evidence_{cf_id}.json"
+    return Response(
+        content=json_bytes,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{safe_filename}"'}
+    )
+
+# ==============================================================================
+# Step 8: Case Diary + AI-Assisted Officer Narrative
+# ==============================================================================
+
+@router.post("/case-diaries", response_model=CaseDiaryResponse)
+def create_case_diary(req: CaseDiaryRequest):
+    """
+    Step 8: Creates a Case Diary for a subject account.
+
+    Pipeline:
+    1. Run investigation (Step 6 engine)
+    2. Extract deterministic VerifiedFacts
+    3. Build timestamp-sorted chronology
+    4. Extract DiaryFindings (risk, role, velocity, attribution)
+    5. Optionally generate AI narrative (Gemini or deterministic fallback)
+    6. Validate narrative (hallucination guardrail)
+    7. Store in process-local store
+
+    FORENSIC RULE: AI narrative is an interpretation layer only.
+    The AI does NOT create, modify, or independently establish evidence.
+
+    Process-local persistence: case diaries are not retained across backend restarts.
+    """
+    con = get_db()
+    try:
+        return build_case_diary(con, req)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Case diary generation error: {str(e)}")
+
+
+@router.get("/case-diaries/{diary_id}", response_model=CaseDiaryResponse)
+def get_case_diary(diary_id: str):
+    """
+    Step 8: Retrieves a previously generated case diary from process-local storage.
+
+    Returns 404 if the diary is not found (e.g., after a backend restart).
+    """
+    d_id = diary_id.strip()
+    diary = CASE_DIARY_STORE.get(d_id)
+    if diary is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"Case diary '{d_id}' not found in process-local store. "
+                "Case diaries are not persistent across backend restarts. "
+                "Use POST /api/case-diaries to regenerate."
+            )
+        )
+    import time
+    return CaseDiaryResponse(case_diary=diary, generation_time_ms=0.0)
+
+
+@router.post("/case-diaries/{diary_id}/generate-narrative", response_model=CaseDiaryResponse)
+def generate_case_diary_narrative(diary_id: str, req: GenerateNarrativeRequest):
+    """
+    Step 8: (Re)generates the AI-assisted narrative for an existing case diary.
+
+    Uses the same verified facts already extracted during diary creation.
+    Does not re-run the full investigation.
+
+    If force_deterministic=True, skips AI and uses the deterministic fallback.
+    If GEMINI_API_KEY is not configured, deterministic fallback is used automatically.
+
+    FORENSIC RULE: AI narrative is derived from pre-extracted verified evidence only.
+    """
+    d_id = diary_id.strip()
+    try:
+        return regenerate_narrative(d_id, req)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Narrative generation error: {str(e)}")

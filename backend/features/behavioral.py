@@ -210,6 +210,12 @@ def compute_account_features(con: duckdb.DuckDBPyConnection) -> int:
             CAST('CANDIDATE_CLASSIFICATION' AS VARCHAR) AS classification_provenance,
             -- Future Detection Placeholders (reserved for later steps)
             CAST(NULL AS DOUBLE) AS mule_risk_index,
+            CAST(NULL AS VARCHAR) AS risk_band,
+            CAST('[]' AS VARCHAR) AS risk_reasons,
+            CAST('{}' AS VARCHAR) AS risk_family_scores,
+            CAST(NULL AS VARCHAR) AS risk_model_version,
+            CAST(NULL AS TIMESTAMP) AS risk_computed_at,
+            CAST(NULL AS VARCHAR) AS risk_provenance,
             CAST(NULL AS VARCHAR) AS risk_factors,
             CAST(NULL AS BOOLEAN) AS cycle_indicator,
             -- Step 5A Velocity placeholders (populated by compute_velocity_features)
@@ -253,6 +259,10 @@ def compute_account_features(con: duckdb.DuckDBPyConnection) -> int:
     # Step 5A: Run deterministic 3-15 minute pass-through velocity detection
     from backend.detection.velocity_detector import compute_velocity_features
     compute_velocity_features(con)
+
+    # Step 5B: Run deterministic 0-100 Mule Risk Index scoring engine
+    from backend.detection.risk_scoring import compute_mule_risk_index
+    compute_mule_risk_index(con)
 
     return con.execute("SELECT count(*) FROM account_features").fetchone()[0]
 

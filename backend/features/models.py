@@ -10,6 +10,8 @@ from datetime import datetime
 from typing import Optional, Dict, Any, List, Union
 from pydantic import BaseModel, Field, field_validator
 
+from backend.detection.risk_models import RiskReason
+
 
 class CandidateReason(BaseModel):
     """
@@ -131,9 +133,15 @@ class AccountFeatures(BaseModel):
     layer2_signal_count: Optional[int] = Field(0, description="Count of active signals for Layer 2")
     layer3_signal_count: Optional[int] = Field(0, description="Count of active signals for Layer 3")
 
-    # Future Detection Placeholders (Prohibited in Step 4; reserved for later steps)
-    mule_risk_index: Optional[float] = Field(None, description="Deterministic 0-100 Mule Risk Index (Future Step)")
-    risk_factors: Optional[str] = Field(None, description="Explainable factor breakdown (Future Step)")
+    # 14. Step 5B -- Explainable 0-100 Mule Risk Index
+    mule_risk_index: Optional[float] = Field(None, description="Deterministic 0-100 Mule Risk Index")
+    risk_band: Optional[str] = Field(None, description="Risk tier: LOW, MODERATE, HIGH, VERY_HIGH")
+    risk_reasons: List[RiskReason] = Field(default_factory=list, description="Structured explainable evidence reason items")
+    risk_family_scores: Dict[str, float] = Field(default_factory=dict, description="Point contribution breakdown per evidence family")
+    risk_model_version: Optional[str] = Field(None, description="Risk model schema version")
+    risk_computed_at: Optional[datetime] = Field(None, description="Timestamp when risk score was calculated")
+    risk_provenance: Optional[str] = Field(None, description="Risk scoring provenance marker (DERIVED)")
+    risk_factors: Optional[str] = Field(None, description="Explainable factor breakdown")
     cycle_indicator: Optional[bool] = Field(None, description="Circular transaction routing indicator (Future Step)")
 
     # 14. Step 5A -- Pass-Through Velocity Detection (3-15 minute window)
@@ -214,7 +222,7 @@ class AccountFeatures(BaseModel):
     classification_computed_at: Optional[datetime] = Field(None, description="Timestamp when candidate classification was computed")
     classification_provenance: Optional[str] = Field("CANDIDATE_CLASSIFICATION", description="Classification provenance marker")
 
-    @field_validator("layer1_reasons", "layer2_reasons", "layer3_reasons", mode="before")
+    @field_validator("layer1_reasons", "layer2_reasons", "layer3_reasons", "risk_reasons", mode="before")
     @classmethod
     def parse_reasons(cls, v):
         if isinstance(v, str):
@@ -224,5 +232,17 @@ class AccountFeatures(BaseModel):
                 return []
         if v is None:
             return []
+        return v
+
+    @field_validator("risk_family_scores", mode="before")
+    @classmethod
+    def parse_family_scores(cls, v):
+        if isinstance(v, str):
+            try:
+                v = json.loads(v)
+            except Exception:
+                return {}
+        if v is None:
+            return {}
         return v
 

@@ -5,6 +5,9 @@ import { CommandCenter } from './pages/CommandCenter';
 import { AccountView } from './pages/AccountView';
 import { TransactionExplorer } from './pages/TransactionExplorer';
 import { NetworkGraph } from './pages/NetworkGraph';
+import { VictimInvestigation } from './pages/VictimInvestigation';
+import { CaseDiaryView } from './pages/CaseDiaryView';
+import { LegalFreezeView } from './pages/LegalFreezeView';
 
 export const App: React.FC = () => {
   return (
@@ -14,6 +17,12 @@ export const App: React.FC = () => {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<CommandCenter />} />
+            <Route path="/victim" element={<VictimInvestigation />} />
+            <Route path="/victim/:id" element={<VictimInvestigation />} />
+            <Route path="/diary" element={<CaseDiaryView />} />
+            <Route path="/diary/:id" element={<CaseDiaryView />} />
+            <Route path="/case-diary" element={<CaseDiaryView />} />
+            <Route path="/legal-freeze" element={<LegalFreezeView />} />
             <Route path="/investigate" element={<NetworkGraph />} />
             <Route path="/account/:id" element={<AccountView />} />
             <Route path="/accounts/:id" element={<AccountView />} />

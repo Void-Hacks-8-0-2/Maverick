@@ -36,3 +36,6 @@ yarn-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Scratch & Temporary Testing Scripts
+scratch/

@@ -329,8 +329,8 @@ def test_account_features_api_endpoint():
     assert data["layer2_signal_count"] >= 3
     assert data["classification_version"] == "v1"
     assert data["classification_provenance"] == "CANDIDATE_CLASSIFICATION"
-    # Uncomputed detection placeholders prohibited in Step 4 must remain None
-    assert data["mule_risk_index"] is None
+    # Step 5B Mule Risk Index computed value
+    assert data["mule_risk_index"] is not None and 0.0 <= data["mule_risk_index"] <= 100.0
 
 
     # Test 404

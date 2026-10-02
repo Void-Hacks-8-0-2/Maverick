@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShieldAlert, Activity, Search, Database, Network, ListFilter } from 'lucide-react';
+import { ShieldAlert, Activity, Search, Database, Network, ListFilter, BookOpen, Scale } from 'lucide-react';
 import { getHealth } from '../api/dataset';
 
 export const Navbar: React.FC = () => {
@@ -15,7 +15,10 @@ export const Navbar: React.FC = () => {
 
   const navLinks = [
     { path: '/', label: 'Command Center', icon: Activity },
-    { path: '/investigate', label: 'Investigation Workspace', icon: Search },
+    { path: '/victim', label: 'Blind Victim Trace', icon: ShieldAlert },
+    { path: '/diary', label: 'Case Diary & AI', icon: BookOpen },
+    { path: '/legal-freeze', label: 'Legal Drafts', icon: Scale },
+    { path: '/investigate', label: 'Network Workspace', icon: Search },
     { path: '/transactions', label: 'Transactions', icon: ListFilter },
     { path: '/graph', label: 'Network Graph', icon: Network },
   ];
