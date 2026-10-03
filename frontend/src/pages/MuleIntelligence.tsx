@@ -27,11 +27,13 @@ export const MuleIntelligence: React.FC = () => {
   const roleFilter = searchParams.get('role') || '';
   const riskBandFilter = searchParams.get('risk_band') || '';
   const velocityOnly = searchParams.get('velocity') === 'true';
+  const minRiskFilter = searchParams.get('min_risk') || '';
   const sortBy = searchParams.get('sort_by') || 'risk';
   const page = parseInt(searchParams.get('page') || '0', 10);
   const pageSize = 25;
 
   const [summary, setSummary] = useState<MuleIntelligenceSummary | null>(null);
+  const [elevatedRiskCount, setElevatedRiskCount] = useState<number | null>(null);
   const [items, setItems] = useState<MuleCandidateItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -39,6 +41,17 @@ export const MuleIntelligence: React.FC = () => {
 
   // Search input within current view
   const [searchFilter, setSearchFilter] = useState('');
+
+  // Fetch dynamic elevated risk count (Risk >= 50) using existing /mules API
+  useEffect(() => {
+    getMuleIntelligence({ min_risk: 50, limit: 1 })
+      .then((res) => {
+        setElevatedRiskCount(res.total_count);
+      })
+      .catch(() => {
+        setElevatedRiskCount(null);
+      });
+  }, []);
 
   const fetchCandidates = () => {
     setLoading(true);
@@ -48,6 +61,7 @@ export const MuleIntelligence: React.FC = () => {
       role: roleFilter || undefined,
       risk_band: riskBandFilter || undefined,
       velocity_only: velocityOnly || undefined,
+      min_risk: minRiskFilter ? parseFloat(minRiskFilter) : undefined,
       sort_by: sortBy,
       order: 'desc',
       limit: pageSize,
@@ -67,7 +81,7 @@ export const MuleIntelligence: React.FC = () => {
 
   useEffect(() => {
     fetchCandidates();
-  }, [roleFilter, riskBandFilter, velocityOnly, sortBy, page]);
+  }, [roleFilter, riskBandFilter, velocityOnly, minRiskFilter, sortBy, page]);
 
   const updateParam = (key: string, value: string | null) => {
     const next = new URLSearchParams(searchParams);
@@ -99,6 +113,21 @@ export const MuleIntelligence: React.FC = () => {
           </span>
         }
       />
+
+      {/* Institutional Scope Clarification Strip */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-3.5 py-2 rounded-lg text-[10px] font-mono bg-slate-50 border border-slate-200 text-slate-600">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-slate-800">INVESTIGATIVE CANDIDATE INTELLIGENCE:</span>
+          <span>Heuristic & Behavioral Flow Triage (Not Ground Truth)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-slate-800">EVALUATOR PREDICTION SET:</span>
+          <span className="text-violet-700 font-semibold font-mono">
+            {summary?.predicted_mule_count ? summary.predicted_mule_count.toLocaleString() : '800'} ACCOUNTS
+          </span>
+          <span className="text-slate-400 text-[9px] uppercase tracking-wider">(Separated Forensic Syndicate Subgraph)</span>
+        </div>
+      </div>
 
       {/* Role Architecture Reference Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -154,13 +183,26 @@ export const MuleIntelligence: React.FC = () => {
           icon={Users}
         />
         <MetricCard
-          label="High Risk (Index ≥ 70)"
-          value={summary ? summary.high_risk_count.toLocaleString() : '...'}
-          subtitle="Priority triage candidates"
+          label="ELEVATED RISK"
+          value={elevatedRiskCount !== null ? elevatedRiskCount.toLocaleString() : '...'}
+          subtitle={
+            <div className="space-y-1.5 mt-0.5">
+              <div className="text-[10px] font-mono text-slate-500">
+                Risk Index ≥ 50
+              </div>
+              <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px] font-mono">
+                <span className="text-slate-500 font-semibold">VERY HIGH RISK:</span>
+                <span className="font-semibold text-slate-800 tabular-nums">
+                  {summary ? summary.high_risk_count.toLocaleString() : '0'}
+                </span>
+                <span className="text-slate-400 text-[9px]">Risk Index ≥ 70</span>
+              </div>
+            </div>
+          }
           icon={ShieldAlert}
           iconColor="text-rose-600"
           variant="rose"
-          onClick={() => updateParam('risk_band', riskBandFilter === 'HIGH' ? '' : 'HIGH')}
+          onClick={() => updateParam('min_risk', minRiskFilter === '50' ? '' : '50')}
         />
         <MetricCard
           label="Rapid Pass-Through"
@@ -228,6 +270,19 @@ export const MuleIntelligence: React.FC = () => {
             <Zap className="w-3 h-3 text-amber-600" />
             <span>3–15m Velocity Only</span>
           </button>
+
+          {/* Active Min Risk Filter Pill */}
+          {minRiskFilter && (
+            <button
+              type="button"
+              onClick={() => updateParam('min_risk', '')}
+              className="px-2.5 py-1.5 rounded text-xs font-mono flex items-center gap-1.5 bg-rose-50 border border-rose-200 text-rose-700 font-semibold hover:bg-rose-100 transition"
+              title="Click to clear filter"
+            >
+              <span>Score ≥ {minRiskFilter}</span>
+              <span className="text-[10px] font-bold">&times;</span>
+            </button>
+          )}
 
           {/* Sort Selector */}
           <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">

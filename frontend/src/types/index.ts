@@ -955,6 +955,7 @@ export interface MuleIntelligenceSummary {
   l3_count: number;
   high_risk_count: number;
   velocity_count: number;
+  predicted_mule_count?: number;
 }
 
 export interface MuleIntelligenceResponse {
