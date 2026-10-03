@@ -1,0 +1,133 @@
+{
+  "status": "AWAITING_GROUND_TRUTH",
+  "ground_truth_status": "AWAITING_GROUND_TRUTH",
+  "message": "Ground-truth labels were not available in the supplied production dataset; therefore precision/recall/F1 are not reported. The evaluation harness is implemented and ready for the official labels.",
+  "labels_file": "C:\\Users\\sdmgo\\.gemini\\antigravity-ide\\scratch\\Maverick\\data\\ground_truth_labels.csv",
+  "ground_truth_supplied": false,
+  "dataset_path": "C:\\Users\\sdmgo\\.gemini\\antigravity-ide\\scratch\\Maverick\\data\\VoidHacks8_MuleAccount_2M_Transactions.csv",
+  "dataset_account_count": 24873,
+  "evaluation_timestamp": "2026-10-03T02:00:18.514319+00:00",
+  "code_version": "0.1.0-base",
+  "policies": {
+    "L1_candidate": {
+      "policy_name": "L1_candidate",
+      "definition": "layer1_candidate == true",
+      "description": "Layer 1 Collector Candidate (inbound credit aggregation)",
+      "predicted_positive_count": 2381,
+      "population_count": 24873,
+      "positive_rate": 0.0957
+    },
+    "L2_candidate": {
+      "policy_name": "L2_candidate",
+      "definition": "layer2_candidate == true",
+      "description": "Layer 2 Distributor Candidate (rapid outbound dispersion)",
+      "predicted_positive_count": 2320,
+      "population_count": 24873,
+      "positive_rate": 0.0933
+    },
+    "L3_candidate": {
+      "policy_name": "L3_candidate",
+      "definition": "layer3_candidate == true",
+      "description": "Layer 3 Terminal Candidate (sink absorption / automated drain)",
+      "predicted_positive_count": 732,
+      "population_count": 24873,
+      "positive_rate": 0.0294
+    },
+    "Any_Mule_Role": {
+      "policy_name": "Any_Mule_Role",
+      "definition": "layer1_candidate OR layer2_candidate OR layer3_candidate",
+      "description": "Any classified role candidate (L1 or L2 or L3)",
+      "predicted_positive_count": 5176,
+      "population_count": 24873,
+      "positive_rate": 0.2081
+    },
+    "Risk_GE_35": {
+      "policy_name": "Risk_GE_35",
+      "definition": "mule_risk_index >= 35",
+      "description": "Composite Mule Risk Index >= 35.0 (Moderate+ triage threshold)",
+      "predicted_positive_count": 6739,
+      "population_count": 24873,
+      "positive_rate": 0.2709
+    },
+    "Risk_GE_40": {
+      "policy_name": "Risk_GE_40",
+      "definition": "mule_risk_index >= 40",
+      "description": "Composite Mule Risk Index >= 40.0 (Elevated composite threshold)",
+      "predicted_positive_count": 4628,
+      "population_count": 24873,
+      "positive_rate": 0.1861
+    },
+    "Risk_GE_45": {
+      "policy_name": "Risk_GE_45",
+      "definition": "mule_risk_index >= 45",
+      "description": "Composite Mule Risk Index >= 45.0 (Upper moderate threshold)",
+      "predicted_positive_count": 2028,
+      "population_count": 24873,
+      "positive_rate": 0.0815
+    },
+    "Risk_GE_50": {
+      "policy_name": "Risk_GE_50",
+      "definition": "mule_risk_index >= 50",
+      "description": "Composite Mule Risk Index >= 50.0 (High Risk Band cutoff)",
+      "predicted_positive_count": 583,
+      "population_count": 24873,
+      "positive_rate": 0.0234
+    },
+    "Risk_GE_55": {
+      "policy_name": "Risk_GE_55",
+      "definition": "mule_risk_index >= 55",
+      "description": "Composite Mule Risk Index >= 55.0 (High Risk upper tier)",
+      "predicted_positive_count": 364,
+      "population_count": 24873,
+      "positive_rate": 0.0146
+    },
+    "Risk_GE_60": {
+      "policy_name": "Risk_GE_60",
+      "definition": "mule_risk_index >= 60",
+      "description": "Composite Mule Risk Index >= 60.0 (High Risk peak tier)",
+      "predicted_positive_count": 157,
+      "population_count": 24873,
+      "positive_rate": 0.0063
+    },
+    "Risk_GE_70": {
+      "policy_name": "Risk_GE_70",
+      "definition": "mule_risk_index >= 70",
+      "description": "Composite Mule Risk Index >= 70.0 (Legacy cutoff; 0 accounts in callset)",
+      "predicted_positive_count": 0,
+      "population_count": 24873,
+      "positive_rate": 0.0
+    },
+    "Risk_GE_85": {
+      "policy_name": "Risk_GE_85",
+      "definition": "mule_risk_index >= 85",
+      "description": "Composite Mule Risk Index >= 85.0 (Extreme risk cutoff; 0 accounts in callset)",
+      "predicted_positive_count": 0,
+      "population_count": 24873,
+      "positive_rate": 0.0
+    },
+    "Behavioral_AND_Role": {
+      "policy_name": "Behavioral_AND_Role",
+      "definition": "behavioral_risk_index >= 50 AND (layer1_candidate OR layer2_candidate OR layer3_candidate)",
+      "description": "Elevated behavioral risk (>=50) conjoined with classified role",
+      "predicted_positive_count": 263,
+      "population_count": 24873,
+      "positive_rate": 0.0106
+    },
+    "PassThrough": {
+      "policy_name": "PassThrough",
+      "definition": "pass_through_candidate == true",
+      "description": "Qualifying 3-15 minute pass-through velocity candidate",
+      "predicted_positive_count": 171,
+      "population_count": 24873,
+      "positive_rate": 0.0069
+    },
+    "Forensic_Syndicate_Subgraph": {
+      "policy_name": "Forensic_Syndicate_Subgraph",
+      "definition": "predicted_mule_candidate == true",
+      "description": "Evaluator Prediction Set: Verified non-victim nodes in Victim -> Collector -> Distributor -> Terminal multi-hop chain",
+      "predicted_positive_count": 800,
+      "population_count": 24873,
+      "positive_rate": 0.0322
+    }
+  }
+}

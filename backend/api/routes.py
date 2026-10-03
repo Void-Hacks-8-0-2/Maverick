@@ -128,7 +128,9 @@ class MuleCandidateItem(BaseModel):
     fan_in: int
     fan_out: int
     transaction_count: int
-
+    predicted_mule_candidate: bool = False
+    syndicate_stage: Optional[str] = None
+    syndicate_evidence: Optional[Dict[str, Any]] = None
 
 
 class MuleIntelligenceSummary(BaseModel):
@@ -138,6 +140,8 @@ class MuleIntelligenceSummary(BaseModel):
     l3_count: int
     high_risk_count: int
     velocity_count: int
+    predicted_mule_count: int = 0
+    predicted_mule_by_stage: Dict[str, int] = Field(default_factory=dict)
 
 
 class MuleIntelligenceResponse(BaseModel):
@@ -257,6 +261,8 @@ def get_mule_intelligence(
     role: Optional[str] = Query(None, description="Role filter: L1, L2, L3, ANY"),
     risk_band: Optional[str] = Query(None, description="Risk band: LOW, MODERATE, HIGH, VERY_HIGH"),
     velocity_only: bool = Query(False, description="Filter for pass-through velocity candidates"),
+    predicted_only: bool = Query(False, description="Filter for evaluator prediction candidate accounts"),
+    stage: Optional[str] = Query(None, description="Filter by syndicate stage (STAGE_1_COLLECTOR, STAGE_2_DISTRIBUTOR, STAGE_3_TERMINAL, MULTI_STAGE)"),
     min_risk: Optional[float] = Query(None, description="Minimum Mule Risk Index"),
     sort_by: str = Query("risk", description="Sort field: risk, volume, fan_in, fan_out, tx_count"),
     order: str = Query("desc", description="Sort order: asc or desc"),
@@ -278,9 +284,17 @@ def get_mule_intelligence(
             SUM(CASE WHEN layer2_candidate THEN 1 ELSE 0 END),
             SUM(CASE WHEN layer3_candidate THEN 1 ELSE 0 END),
             SUM(CASE WHEN mule_risk_index >= 70 THEN 1 ELSE 0 END),
-            SUM(CASE WHEN pass_through_candidate THEN 1 ELSE 0 END)
+            SUM(CASE WHEN pass_through_candidate THEN 1 ELSE 0 END),
+            SUM(CASE WHEN predicted_mule_candidate THEN 1 ELSE 0 END)
         FROM account_features
     """).fetchone()
+
+    stage_counts = dict(con.execute("""
+        SELECT syndicate_stage, COUNT(*)
+        FROM account_features
+        WHERE predicted_mule_candidate = true AND syndicate_stage IS NOT NULL
+        GROUP BY 1
+    """).fetchall())
 
     summary = MuleIntelligenceSummary(
         total_accounts=int(summary_row[0] or 0),
@@ -289,6 +303,8 @@ def get_mule_intelligence(
         l3_count=int(summary_row[3] or 0),
         high_risk_count=int(summary_row[4] or 0),
         velocity_count=int(summary_row[5] or 0),
+        predicted_mule_count=int(summary_row[6] or 0),
+        predicted_mule_by_stage=stage_counts,
     )
 
     # 2. Dynamic filter clauses
@@ -312,6 +328,13 @@ def get_mule_intelligence(
 
     if velocity_only:
         where_clauses.append("pass_through_candidate = true")
+
+    if predicted_only:
+        where_clauses.append("predicted_mule_candidate = true")
+
+    if stage:
+        where_clauses.append("syndicate_stage = ?")
+        params.append(stage.upper())
 
     if min_risk is not None:
         where_clauses.append("mule_risk_index >= ?")
@@ -356,7 +379,10 @@ def get_mule_intelligence(
             COALESCE(structural_risk_index, 0.0),
             COALESCE(behavioral_risk_index, 0.0),
             COALESCE(investigative_signal, 'LOW CURRENT INDICATOR'),
-            COALESCE(multi_modal_confirmation, false)
+            COALESCE(multi_modal_confirmation, false),
+            COALESCE(predicted_mule_candidate, false),
+            syndicate_stage,
+            syndicate_evidence
         FROM account_features
         WHERE {where_sql}
         ORDER BY {sort_col} {sort_dir} NULLS LAST
@@ -365,6 +391,13 @@ def get_mule_intelligence(
 
     items = []
     for r in rows:
+        ev = r[20]
+        if isinstance(ev, str):
+            try:
+                import json
+                ev = json.loads(ev)
+            except Exception:
+                ev = {}
         items.append(MuleCandidateItem(
             account_number=r[0],
             risk_index=round(float(r[1]), 1),
@@ -384,6 +417,9 @@ def get_mule_intelligence(
             behavioral_risk_index=round(float(r[15]), 1),
             investigative_signal=str(r[16]),
             multi_modal_confirmation=bool(r[17]),
+            predicted_mule_candidate=bool(r[18]),
+            syndicate_stage=r[19],
+            syndicate_evidence=ev if isinstance(ev, dict) else {},
         ))
 
     return MuleIntelligenceResponse(

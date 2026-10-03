@@ -264,6 +264,10 @@ def compute_account_features(con: duckdb.DuckDBPyConnection) -> int:
     from backend.detection.risk_scoring import compute_mule_risk_index
     compute_mule_risk_index(con)
 
+    # Step 5C: Run deterministic Forensic Syndicate Subgraph Prediction layer
+    from backend.detection.syndicate_predictor import compute_syndicate_predictions
+    compute_syndicate_predictions(con)
+
     return con.execute("SELECT count(*) FROM account_features").fetchone()[0]
 
 

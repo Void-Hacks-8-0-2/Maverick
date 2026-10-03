@@ -1,0 +1,467 @@
+[
+  {
+    "case_number": 1,
+    "victim_account": "BARB10000009",
+    "latency_seconds": 0.2771,
+    "sub_2_sec": true,
+    "victim_is_predicted_mule": true,
+    "victim_legacy_role": "NONE",
+    "total_edges": 14,
+    "total_nodes": 15,
+    "max_hop_reached": 3,
+    "total_attributed_amount": 234650.28,
+    "terminals_count": 8,
+    "sample_edges": [
+      {
+        "hop": 1,
+        "source": "BARB10000009",
+        "dest": "SBIN10000392",
+        "amount": 78552.3,
+        "tx_id": "TXN784197311",
+        "timestamp": "2026-09-22T14:01:24"
+      },
+      {
+        "hop": 2,
+        "source": "BARB10000009",
+        "dest": "AXIS10000621",
+        "amount": 25165.38,
+        "tx_id": "TXN784197311",
+        "timestamp": "2026-09-22T14:01:24"
+      },
+      {
+        "hop": 2,
+        "source": "BARB10000009",
+        "dest": "IPOS10000481",
+        "amount": 279.0,
+        "tx_id": "TXN784197311",
+        "timestamp": "2026-09-22T14:01:24"
+      },
+      {
+        "hop": 2,
+        "source": "BARB10000009",
+        "dest": "PUNB10000709",
+        "amount": 15827.51,
+        "tx_id": "TXN784197311",
+        "timestamp": "2026-09-22T14:01:24"
+      },
+      {
+        "hop": 2,
+        "source": "BARB10000009",
+        "dest": "AXIS10000973",
+        "amount": 35709.38,
+        "tx_id": "TXN784197311",
+        "timestamp": "2026-09-22T14:01:24"
+      },
+      {
+        "hop": 2,
+        "source": "BARB10000009",
+        "dest": "IPOS10000455",
+        "amount": 1571.03,
+        "tx_id": "TXN784197311",
+        "timestamp": "2026-09-22T14:01:24"
+      }
+    ],
+    "terminals_sample": [
+      {
+        "account": "SBIN10001371",
+        "hop": 3,
+        "amount": 34281.0,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "MODERATE"
+      },
+      {
+        "account": "HDFC10001426",
+        "hop": 3,
+        "amount": 24158.76,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "MODERATE"
+      },
+      {
+        "account": "AXIS10001493",
+        "hop": 3,
+        "amount": 15194.41,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "MODERATE"
+      },
+      {
+        "account": "BARB10001325",
+        "hop": 3,
+        "amount": 1571.03,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "LOW"
+      }
+    ]
+  },
+  {
+    "case_number": 2,
+    "victim_account": "IPOS10000042",
+    "latency_seconds": 0.2728,
+    "sub_2_sec": true,
+    "victim_is_predicted_mule": true,
+    "victim_legacy_role": "NONE",
+    "total_edges": 12,
+    "total_nodes": 13,
+    "max_hop_reached": 3,
+    "total_attributed_amount": 1284827.1,
+    "terminals_count": 7,
+    "sample_edges": [
+      {
+        "hop": 1,
+        "source": "IPOS10000042",
+        "dest": "SBIN10000448",
+        "amount": 434540.84,
+        "tx_id": "TXN833043962",
+        "timestamp": "2026-09-15T19:01:26"
+      },
+      {
+        "hop": 2,
+        "source": "IPOS10000042",
+        "dest": "SBIN10001092",
+        "amount": 35344.48,
+        "tx_id": "TXN833043962",
+        "timestamp": "2026-09-15T19:01:26"
+      },
+      {
+        "hop": 2,
+        "source": "IPOS10000042",
+        "dest": "PUNB10001022",
+        "amount": 554.87,
+        "tx_id": "TXN833043962",
+        "timestamp": "2026-09-15T19:01:26"
+      },
+      {
+        "hop": 2,
+        "source": "IPOS10000042",
+        "dest": "BARB10001004",
+        "amount": 63111.49,
+        "tx_id": "TXN833043962",
+        "timestamp": "2026-09-15T19:01:26"
+      },
+      {
+        "hop": 2,
+        "source": "IPOS10000042",
+        "dest": "SBIN10000971",
+        "amount": 326839.18,
+        "tx_id": "TXN833043962",
+        "timestamp": "2026-09-15T19:01:26"
+      },
+      {
+        "hop": 3,
+        "source": "SBIN10000448",
+        "dest": "HDFC10001365",
+        "amount": 33930.7,
+        "tx_id": "TXN943248205",
+        "timestamp": "2026-09-15T19:04:46"
+      }
+    ],
+    "terminals_sample": [
+      {
+        "account": "AIRP10001423",
+        "hop": 3,
+        "amount": 313765.61,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "MODERATE"
+      },
+      {
+        "account": "ICIC10001123",
+        "hop": 3,
+        "amount": 60587.03,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "LOW"
+      },
+      {
+        "account": "HDFC10001365",
+        "hop": 3,
+        "amount": 33930.7,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "MODERATE"
+      },
+      {
+        "account": "IPOS10001296",
+        "hop": 3,
+        "amount": 13073.57,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "MODERATE"
+      }
+    ]
+  },
+  {
+    "case_number": 3,
+    "victim_account": "ICIC10000106",
+    "latency_seconds": 0.3975,
+    "sub_2_sec": true,
+    "victim_is_predicted_mule": true,
+    "victim_legacy_role": "NONE",
+    "total_edges": 15,
+    "total_nodes": 16,
+    "max_hop_reached": 3,
+    "total_attributed_amount": 164912.58,
+    "terminals_count": 9,
+    "sample_edges": [
+      {
+        "hop": 1,
+        "source": "ICIC10000106",
+        "dest": "PUNB10000428",
+        "amount": 54970.86,
+        "tx_id": "TXN469586408",
+        "timestamp": "2026-09-21T07:45:04"
+      },
+      {
+        "hop": 2,
+        "source": "ICIC10000106",
+        "dest": "SBIN10001061",
+        "amount": 15708.57,
+        "tx_id": "TXN469586408",
+        "timestamp": "2026-09-21T07:45:04"
+      },
+      {
+        "hop": 2,
+        "source": "ICIC10000106",
+        "dest": "AIRP10001054",
+        "amount": 1206.51,
+        "tx_id": "TXN469586408",
+        "timestamp": "2026-09-21T07:45:04"
+      },
+      {
+        "hop": 2,
+        "source": "ICIC10000106",
+        "dest": "ICIC10000487",
+        "amount": 25989.31,
+        "tx_id": "TXN469586408",
+        "timestamp": "2026-09-21T07:45:04"
+      },
+      {
+        "hop": 2,
+        "source": "ICIC10000106",
+        "dest": "HDFC10000907",
+        "amount": 10967.06,
+        "tx_id": "TXN469586408",
+        "timestamp": "2026-09-21T07:45:04"
+      },
+      {
+        "hop": 2,
+        "source": "ICIC10000106",
+        "dest": "ICIC10000920",
+        "amount": 1099.41,
+        "tx_id": "TXN469586408",
+        "timestamp": "2026-09-21T07:45:04"
+      }
+    ],
+    "terminals_sample": [
+      {
+        "account": "AIRP10001252",
+        "hop": 3,
+        "amount": 24949.74,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "MODERATE"
+      },
+      {
+        "account": "SBIN10001368",
+        "hop": 3,
+        "amount": 15080.22,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "MODERATE"
+      },
+      {
+        "account": "HDFC10001251",
+        "hop": 3,
+        "amount": 10528.37,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "LOW"
+      },
+      {
+        "account": "IPOS10001165",
+        "hop": 3,
+        "amount": 1158.25,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "LOW"
+      }
+    ]
+  },
+  {
+    "case_number": 4,
+    "victim_account": "SBIN10000110",
+    "latency_seconds": 0.3795,
+    "sub_2_sec": true,
+    "victim_is_predicted_mule": true,
+    "victim_legacy_role": "NONE",
+    "total_edges": 17,
+    "total_nodes": 18,
+    "max_hop_reached": 3,
+    "total_attributed_amount": 1089500.99,
+    "terminals_count": 10,
+    "sample_edges": [
+      {
+        "hop": 1,
+        "source": "SBIN10000110",
+        "dest": "ICIC10000335",
+        "amount": 363284.68,
+        "tx_id": "TXN978505641",
+        "timestamp": "2026-09-19T13:24:59"
+      },
+      {
+        "hop": 2,
+        "source": "SBIN10000110",
+        "dest": "KKBK10001079",
+        "amount": 90006.44,
+        "tx_id": "TXN978505641",
+        "timestamp": "2026-09-19T13:24:59"
+      },
+      {
+        "hop": 2,
+        "source": "SBIN10000110",
+        "dest": "AXIS10000657",
+        "amount": 67280.87,
+        "tx_id": "TXN978505641",
+        "timestamp": "2026-09-19T13:24:59"
+      },
+      {
+        "hop": 2,
+        "source": "SBIN10000110",
+        "dest": "PYTM10000990",
+        "amount": 112906.68,
+        "tx_id": "TXN978505641",
+        "timestamp": "2026-09-19T13:24:59"
+      },
+      {
+        "hop": 2,
+        "source": "SBIN10000110",
+        "dest": "BARB10000590",
+        "amount": 8826.25,
+        "tx_id": "TXN978505641",
+        "timestamp": "2026-09-19T13:24:59"
+      },
+      {
+        "hop": 2,
+        "source": "SBIN10000110",
+        "dest": "AIRP10000765",
+        "amount": 76998.75,
+        "tx_id": "TXN978505641",
+        "timestamp": "2026-09-19T13:24:59"
+      }
+    ],
+    "terminals_sample": [
+      {
+        "account": "PYTM10001258",
+        "hop": 3,
+        "amount": 108390.42,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "MODERATE"
+      },
+      {
+        "account": "SBIN10001285",
+        "hop": 3,
+        "amount": 86406.18,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "MODERATE"
+      },
+      {
+        "account": "SBIN10001222",
+        "hop": 3,
+        "amount": 73918.8,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "MODERATE"
+      },
+      {
+        "account": "HDFC10001382",
+        "hop": 3,
+        "amount": 64589.63,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "MODERATE"
+      }
+    ]
+  },
+  {
+    "case_number": 5,
+    "victim_account": "BARB10000115",
+    "latency_seconds": 0.3143,
+    "sub_2_sec": true,
+    "victim_is_predicted_mule": true,
+    "victim_legacy_role": "NONE",
+    "total_edges": 14,
+    "total_nodes": 15,
+    "max_hop_reached": 3,
+    "total_attributed_amount": 1340479.64,
+    "terminals_count": 7,
+    "sample_edges": [
+      {
+        "hop": 1,
+        "source": "BARB10000115",
+        "dest": "SBIN10000359",
+        "amount": 452521.2,
+        "tx_id": "TXN984880812",
+        "timestamp": "2026-09-26T14:41:30"
+      },
+      {
+        "hop": 2,
+        "source": "BARB10000115",
+        "dest": "PYTM10000913",
+        "amount": 10355.17,
+        "tx_id": "TXN984880812",
+        "timestamp": "2026-09-26T14:41:30"
+      },
+      {
+        "hop": 2,
+        "source": "BARB10000115",
+        "dest": "AIRP10000595",
+        "amount": 16371.37,
+        "tx_id": "TXN984880812",
+        "timestamp": "2026-09-26T14:41:30"
+      },
+      {
+        "hop": 2,
+        "source": "BARB10000115",
+        "dest": "PUNB10000560",
+        "amount": 58538.88,
+        "tx_id": "TXN984880812",
+        "timestamp": "2026-09-26T14:41:30"
+      },
+      {
+        "hop": 2,
+        "source": "BARB10000115",
+        "dest": "SBIN10000722",
+        "amount": 15146.11,
+        "tx_id": "TXN984880812",
+        "timestamp": "2026-09-26T14:41:30"
+      },
+      {
+        "hop": 2,
+        "source": "BARB10000115",
+        "dest": "AIRP10001037",
+        "amount": 343059.24,
+        "tx_id": "TXN984880812",
+        "timestamp": "2026-09-26T14:41:30"
+      }
+    ],
+    "terminals_sample": [
+      {
+        "account": "BARB10001269",
+        "hop": 3,
+        "amount": 329336.87,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "MODERATE"
+      },
+      {
+        "account": "SBIN10001140",
+        "hop": 3,
+        "amount": 56197.33,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "LOW"
+      },
+      {
+        "account": "BARB10001350",
+        "hop": 3,
+        "amount": 15716.51,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "LOW"
+      },
+      {
+        "account": "ICIC10001346",
+        "hop": 3,
+        "amount": 14540.27,
+        "role": "L3 Terminal Candidate",
+        "risk_band": "MODERATE"
+      }
+    ]
+  }
+]

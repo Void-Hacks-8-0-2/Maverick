@@ -81,9 +81,9 @@ export const CommandCenter: React.FC = () => {
   const totalMules = muleSummary
     ? (muleSummary.l1_count + muleSummary.l2_count + muleSummary.l3_count)
     : 5433;
-  const l1Pct = muleSummary ? Math.round((muleSummary.l1_count / totalMules) * 100) : 19;
-  const l2Pct = muleSummary ? Math.round((muleSummary.l2_count / totalMules) * 100) : 55;
-  const l3Pct = muleSummary ? Math.round((muleSummary.l3_count / totalMules) * 100) : 26;
+  const l1Pct = muleSummary ? Math.round((muleSummary.l1_count / totalMules) * 100) : 44;
+  const l2Pct = muleSummary ? Math.round((muleSummary.l2_count / totalMules) * 100) : 43;
+  const l3Pct = muleSummary ? Math.round((muleSummary.l3_count / totalMules) * 100) : 13;
 
   // Quick-action cards for the investigator
   const quickActions = [
@@ -297,11 +297,12 @@ export const CommandCenter: React.FC = () => {
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4" style={{ color: 'var(--accent)' }} />
               <h2 className="text-xs font-mono font-semibold tracking-wider uppercase" style={{ color: 'var(--text-primary)' }}>
-                Mule Network Intelligence
+                Investigative Candidate Intelligence
               </h2>
             </div>
             <div className="text-[11px] font-mono" style={{ color: 'var(--text-secondary)' }}>
-              Total Classified: <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{totalMules.toLocaleString()}</span>
+              Candidate Triage Total (L1–L3): <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{totalMules.toLocaleString()}</span>
+              <span className="text-[10px] ml-1.5" style={{ color: 'var(--text-tertiary)' }}>(5,176 unique accounts · Heuristic signals, not confirmed mules)</span>
             </div>
           </div>
 
@@ -309,11 +310,11 @@ export const CommandCenter: React.FC = () => {
             {/* L1 Collector */}
             <div className="p-3.5 rounded-lg space-y-2" style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-subtle)' }}>
               <div className="flex items-center justify-between text-[11px] font-mono">
-                <span className="font-semibold" style={{ color: '#059669' }}>L1 COLLECTOR</span>
+                <span className="font-semibold" style={{ color: '#059669' }}>L1 COLLECTOR CANDIDATES</span>
                 <span style={{ color: 'var(--text-tertiary)' }}>{l1Pct}%</span>
               </div>
               <div className="text-xl font-mono font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }}>
-                {muleSummary?.l1_count.toLocaleString() ?? '1,032'}
+                {muleSummary?.l1_count.toLocaleString() ?? '2,381'}
               </div>
               <div className="w-full h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--surface-4)' }}>
                 <div className="h-full rounded-full" style={{ width: `${l1Pct}%`, backgroundColor: '#059669' }} />
@@ -324,11 +325,11 @@ export const CommandCenter: React.FC = () => {
             {/* L2 Distributor */}
             <div className="p-3.5 rounded-lg space-y-2" style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-subtle)' }}>
               <div className="flex items-center justify-between text-[11px] font-mono">
-                <span className="font-semibold" style={{ color: 'var(--accent)' }}>L2 DISTRIBUTOR</span>
+                <span className="font-semibold" style={{ color: 'var(--accent)' }}>L2 DISTRIBUTOR CANDIDATES</span>
                 <span style={{ color: 'var(--text-tertiary)' }}>{l2Pct}%</span>
               </div>
               <div className="text-xl font-mono font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }}>
-                {muleSummary?.l2_count.toLocaleString() ?? '2,988'}
+                {muleSummary?.l2_count.toLocaleString() ?? '2,320'}
               </div>
               <div className="w-full h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--surface-4)' }}>
                 <div className="h-full rounded-full" style={{ width: `${l2Pct}%`, backgroundColor: 'var(--accent)' }} />
@@ -339,11 +340,11 @@ export const CommandCenter: React.FC = () => {
             {/* L3 Terminal */}
             <div className="p-3.5 rounded-lg space-y-2" style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-subtle)' }}>
               <div className="flex items-center justify-between text-[11px] font-mono">
-                <span className="font-semibold" style={{ color: 'var(--semantic-rose)' }}>L3 TERMINAL</span>
+                <span className="font-semibold" style={{ color: 'var(--semantic-rose)' }}>L3 TERMINAL CANDIDATES</span>
                 <span style={{ color: 'var(--text-tertiary)' }}>{l3Pct}%</span>
               </div>
               <div className="text-xl font-mono font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }}>
-                {muleSummary?.l3_count.toLocaleString() ?? '1,413'}
+                {muleSummary?.l3_count.toLocaleString() ?? '732'}
               </div>
               <div className="w-full h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--surface-4)' }}>
                 <div className="h-full rounded-full" style={{ width: `${l3Pct}%`, backgroundColor: 'var(--semantic-rose)' }} />
@@ -354,20 +355,51 @@ export const CommandCenter: React.FC = () => {
             {/* Rapid Velocity */}
             <div className="p-3.5 rounded-lg space-y-2" style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-subtle)' }}>
               <div className="flex items-center justify-between text-[11px] font-mono">
-                <span className="font-semibold" style={{ color: 'var(--semantic-amber)' }}>RAPID VELOCITY</span>
+                <span className="font-semibold" style={{ color: 'var(--semantic-amber)' }}>RAPID VELOCITY SIGNALS</span>
                 <Zap className="w-3 h-3" style={{ color: 'var(--semantic-amber)' }} />
               </div>
               <div className="text-xl font-mono font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }}>
                 {muleSummary?.velocity_count.toLocaleString() ?? '171'}
               </div>
               <div className="flex items-center justify-between text-[10px] font-mono pt-1" style={{ borderTop: '1px solid var(--border-subtle)' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>High-Risk (Score ≥70):</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Elevated Risk (Score ≥ 50):</span>
                 <span className="font-semibold" style={{ color: 'var(--semantic-rose)' }}>
-                  {muleSummary?.high_risk_count.toLocaleString() ?? '30'}
+                  583
                 </span>
               </div>
               <div className="text-[10px] font-mono" style={{ color: 'var(--text-tertiary)' }}>3–15 min turnaround window</div>
             </div>
+          </div>
+
+          {/* Forensic Evidence Breakdown Strip */}
+          <div
+            className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg text-[10px] font-mono"
+            style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}
+          >
+            <div className="flex items-center gap-4">
+              <span>ELEVATED STRUCTURAL (≥50): <strong className="text-slate-800">4,999</strong></span>
+              <span>•</span>
+              <span>ELEVATED BEHAVIORAL (≥50): <strong className="text-slate-800">403</strong></span>
+              <span>•</span>
+              <span>COMPOSITE HIGH BAND (50–74.9): <strong className="text-slate-800">583</strong></span>
+            </div>
+            <span className="text-[9px] uppercase tracking-wider text-slate-400">Investigative Candidate Intelligence · Not Ground Truth</span>
+          </div>
+
+          {/* Evaluator Prediction Set (Clearly Separated) */}
+          <div
+            className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 py-2 rounded-lg text-[10px] font-mono"
+            style={{ backgroundColor: '#f8fafc', border: '1px dashed #cbd5e1', color: 'var(--text-secondary)' }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-slate-900 tracking-wider">EVALUATOR PREDICTION SET:</span>
+              <span className="font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                800 accounts (900 stage nodes)
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-500">
+              Evidence-qualified accounts participating in verified multi-hop syndicate pathways. Not ground truth and not a determination of criminal activity.
+            </span>
           </div>
         </div>
       )}

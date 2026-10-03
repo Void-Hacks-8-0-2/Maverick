@@ -217,6 +217,21 @@ class AccountFeatures(BaseModel):
         description="Step 5A provenance marker (DERIVED)."
     )
 
+    # 15. Step 5C -- Deterministic Evaluator Prediction Layer (Forensic Syndicate Subgraph)
+    predicted_mule_candidate: Optional[bool] = Field(
+        False,
+        description="Evaluator Prediction Candidate: Evidence-qualified account participating in verified multi-hop syndicate pathways. "
+                    "INVESTIGATIVE INDICATOR ONLY -- not ground truth and not a legal determination."
+    )
+    syndicate_stage: Optional[str] = Field(
+        None,
+        description="Stage within the detected syndicate subgraph: STAGE_1_COLLECTOR, STAGE_2_DISTRIBUTOR, STAGE_3_TERMINAL, MULTI_STAGE, or None"
+    )
+    syndicate_evidence: Optional[Dict[str, Any]] = Field(
+        default_factory=dict,
+        description="Structured explainable forensic lineage evidence"
+    )
+
     # 14. Provenance & Versioning Metadata
     feature_version: str = Field("v1", description="Feature schema definition version")
     computed_at: Optional[datetime] = Field(None, description="Timestamp when features were calculated")
@@ -237,7 +252,7 @@ class AccountFeatures(BaseModel):
             return []
         return v
 
-    @field_validator("risk_family_scores", mode="before")
+    @field_validator("risk_family_scores", "syndicate_evidence", mode="before")
     @classmethod
     def parse_family_scores(cls, v):
         if isinstance(v, str):
